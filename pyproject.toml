@@ -1,0 +1,13 @@
+[project]
+name = "spotify-copy"
+version = "0.1.0"
+description = "Spotify Clone API"
+requires-python = ">=3.10"
+
+[tool.autopep8]
+max-line-length = 88
+
+[tool.isort]
+profile = "default"
+line_length = 88
+skip = [".git", ".venv", "alembic/versions"]
