@@ -6,35 +6,111 @@
 
 ## Содержание
 
-1. [Обзор проекта](#обзор-проекта)
-2. [Архитектура базы данных](#архитектура-базы-данных)
-3. [Технологический стек](#технологический-стек)
-4. [Структура проекта](#структура-проекта)
-5. [Модели данных (ORM)](#модели-данных-orm)
-6. [Миграции](#миграции)
-7. [API](#api)
-8. [WebSocket](#websocket)
-9. [Аутентификация](#аутентификация)
-10. [Frontend](#frontend)
-11. [Дизайн и UI](#дизайн-и-ui)
-12. [Конфигурация](#конфигурация)
-13. [Инструкция по запуску](#инструкция-по-запуску)
+1. [Инструкция по запуску](#инструкция-по-запуску-проекта)
+2. [Обзор проекта](#обзор-проекта)
+3. [Архитектура базы данных](#архитектура-базы-данных)
+4. [Технологический стек](#технологический-стек)
+5. [Структура проекта](#структура-проекта)
+6. [Модели данных (ORM)](#модели-данных-orm)
+7. [Миграции](#миграции)
+8. [API](#api)
+9. [WebSocket](#websocket)
+10. [Аутентификация](#аутентификация)
+11. [Frontend](#frontend)
+12. [Дизайн и UI](#дизайн-и-ui)
+13. [Конфигурация](#конфигурация)
+14. [История изменений](#история-изменений-changelog)
+
+---
+
+## Инструкция по запуску проекта
+
+### Вариант A: Docker (рекомендуется)
+
+**Требуется:** Docker Desktop
+
+```powershell
+cd D:\Spotify_copy
+.\run-docker.ps1
+```
+
+Или вручную:
+```powershell
+docker-compose up -d --build
+```
+
+После запуска:
+- **Frontend:** http://localhost:3000
+- **Backend:** http://localhost:8000
+- **API Docs:** http://localhost:8000/docs
+
+**Seed (тестовые данные):**
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/seed/seed" -Method POST
+```
+
+**Вход:** `test@example.com` / `test123`
+
+**Остановка:** `docker-compose down`
+
+**API документация:** http://localhost:8000/docs
+
+---
+
+### Вариант B: Локальный запуск
+
+**Требуется:** Python 3.10+, Node.js 20.19+, PostgreSQL 16 (или Docker для postgres)
+
+**1. PostgreSQL:**
+```powershell
+docker-compose up -d postgres
+```
+
+**2. Backend:**
+```powershell
+cd D:\Spotify_copy
+copy .env.example .env
+pip install -r requirements.txt
+python -m alembic upgrade head
+.\run.ps1
+```
+
+**3. Frontend** (в новом терминале):
+```powershell
+cd D:\Spotify_copy\frontend
+npm install
+npm run dev
+```
+
+**4. Seed:**
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/seed/seed" -Method POST
+```
+
+**5. Открыть:** http://localhost:3000
+
+**API документация:** http://localhost:8000/docs
+
+---
+
+### Важно
+
+- **Ошибка 500** — обычно означает, что PostgreSQL не запущен. Запустите `docker-compose up -d postgres` и подождите 5–10 секунд.
+- **Ошибка 401 при входе** — проверьте, что seed выполнен (создан тестовый пользователь).
 
 ---
 
 ## Обзор проекта
 
-**Spotify Clone** — fullstack проект, представляющий собой копию музыкального сервиса Spotify с real-time функционалом.
+**Spotify Clone** — fullstack проект, представляющий собой копию музыкального сервиса Spotify.
 
 ### Возможности
 
 - 🎵 **Воспроизведение музыки** — треки, альбомы, плейлисты
 - 🔍 **Поиск** — по трекам, альбомам и артистам
 - 📚 **Your Library** — плейлисты и альбомы пользователя
-- 🔐 **Аутентификация** — регистрация, вход, JWT токены
-- 💬 **Real-time чат** — личные сообщения между пользователями
-- 👥 **Онлайн статусы** — отображение онлайн/офлайн пользователей
-- 🎧 **Активность** — что играет у пользователя в реальном времени
+- 🔐 **Аутентификация** — регистрация, вход, JWT токены (автообновление при 401)
+- 🎤 **Информация об исполнителе** — выезжающая панель с данными артиста и расписанием концертов
 - 📊 **Админ панель** — управление треками и альбомами
 - 📱 **Адаптивный дизайн** — работа на desktop и мобильных
 
@@ -42,7 +118,6 @@
 
 1. **Backend** — FastAPI (Python) + PostgreSQL
 2. **Frontend** — React + TypeScript + Vite
-3. **WebSocket** — Socket.IO для real-time обновлений
 
 ---
 
@@ -204,7 +279,6 @@ auth_users (1) ──────< (1) user_profiles
 | Миграции    | Alembic      | 1.13+   |
 | СУБД        | PostgreSQL   | 16      |
 | Auth        | python-jose, bcrypt | 3.3+, 4.0+ |
-| WebSocket   | python-socketio | 5.x   |
 | ASGI-сервер | Uvicorn      | 0.27+   |
 | **Frontend** |
 | Фреймворк   | React        | 19.x    |
@@ -213,7 +287,6 @@ auth_users (1) ──────< (1) user_profiles
 | Стили       | Tailwind CSS | 3.x     |
 | State       | Zustand      | 5.x     |
 | Роутинг     | React Router | 7.x     |
-| WebSocket   | socket.io-client | 4.x |
 | UI          | Radix UI     | latest  |
 | HTTP        | Axios        | 1.x     |
 
@@ -266,17 +339,16 @@ Spotify_copy/
 │   │   │   └── Topbar.tsx
 │   │   ├── layout/               # Layout
 │   │   │   ├── MainLayout.tsx
-│   │   │   └── components/       # LeftSidebar, FriendsActivity, AudioPlayer, PlaybackControls
+│   │   │   └── components/       # LeftSidebar, ArtistInfoSidebar, AudioPlayer, PlaybackControls
 │   │   ├── pages/                # Страницы
 │   │   │   ├── home/             # Главная
 │   │   │   ├── search/           # Поиск
 │   │   │   ├── library/          # Your Library
 │   │   │   ├── album/            # Страница альбома
-│   │   │   ├── chat/             # Чат
 │   │   │   ├── admin/            # Админ панель
 │   │   │   ├── login/            # Вход/регистрация
 │   │   │   └── 404/              # Страница не найдена
-│   │   ├── stores/               # Zustand stores
+│   │   ├── stores/               # Zustand stores (auth, player, music, artist)
 │   │   ├── providers/            # AuthProvider
 │   │   ├── types/                # TypeScript типы
 │   │   ├── lib/                  # axios, utils
@@ -304,7 +376,8 @@ Spotify_copy/
 ├── requirements.txt
 ├── requirements-dev.txt          # autopep8, isort
 ├── pyproject.toml                # Конфигурация Black, isort
-├── run.ps1                       # Запуск backend
+├── run.ps1                       # Запуск backend (локально)
+├── run-docker.ps1                # Запуск в Docker
 ├── migrate.ps1                   # Применение миграций
 ├── DOCUMENTATION.md              # Данная документация
 └── STUDENT_GUIDE.md              # Гайд для студентов
@@ -507,34 +580,7 @@ JWT обязателен. При каждом play создаётся запис
 
 ## WebSocket
 
-WebSocket используется для real-time обновлений:
-
-### Функции
-
-1. **Онлайн статусы** — отображение подключенных пользователей
-2. **Активность** — что играет пользователь в реальном времени
-3. **Чат** — личные сообщения между пользователями
-
-### Подключение
-
-```typescript
-const socket = io("ws://localhost:8000", {
-  auth: {
-    token: "Bearer <access_token>",
-    userId: "<user_id>"
-  }
-});
-```
-
-### События
-
-| Направление | Событие | Описание |
-|-------------|---------|----------|
-| С→С | `send_message` | Отправить сообщение |
-| С→С | `update_activity` | Обновить активность |
-| С→К | `users_online` | Список онлайн |
-| С→К | `receive_message` | Получено сообщение |
-| С→К | `activity_updated` | Активность обновлена |
+WebSocket endpoint присутствует в backend (`/socket.io`), но **не используется во frontend**. Чат и активность друзей отключены.
 
 ---
 
@@ -556,6 +602,16 @@ const socket = io("ws://localhost:8000", {
 - **Access Token** — 30 минут
 - **Refresh Token** — 7 дней
 
+### Автообновление токена (401)
+
+При ответе **401 Unauthorized** axios interceptor автоматически:
+1. Вызывает `POST /api/auth/refresh` с refresh_token
+2. Сохраняет новые токены в localStorage и store
+3. Повторяет исходный запрос с новым access_token
+4. При неудаче refresh — логаут и редирект на `/login`
+
+Это устраняет ошибки 401 при переходе между страницами и долгой работе в приложении.
+
 ### Защищённые endpoints
 
 Требуют заголовок: `Authorization: Bearer <access_token>`
@@ -576,23 +632,22 @@ const socket = io("ws://localhost:8000", {
 | Search | `/search` | Поиск по трекам, альбомам, артистам |
 | Library | `/library` | Плейлисты и альбомы пользователя |
 | Album | `/albums/:id` | Страница альбома |
-| Chat | `/chat` | Чат |
 | Admin | `/admin` | Панель администратора |
 
 ### Stores (Zustand)
 
-- **useAuthStore** — аутентификация
+- **useAuthStore** — аутентификация, refresh токена
 - **usePlayerStore** — плеер (очередь, воспроизведение)
 - **useMusicStore** — музыка (featured, trending, albums, search)
-- **useChatStore** — чат и WebSocket
+- **useArtistStore** — выбранный исполнитель, открытие панели
 
 ### Layout
 
-- **MainLayout** — трёхколоночный layout (sidebar | content | friends)
+- **MainLayout** — layout (LeftSidebar | content | кнопка «Исполнитель»)
 - **LeftSidebar** — Home, Search, Your Library, альбомы
-- **FriendsActivity** — активность друзей, чат
-- **PlaybackControls** — плеер (play/pause, progress, volume)
-- **Topbar** — навигация Back/Forward, Chat, Admin, профиль
+- **ArtistInfoSidebar** — выезжающая панель с информацией об исполнителе и расписанием концертов
+- **PlaybackControls** — плеер (play/pause, progress, volume); имя артиста кликабельно
+- **Topbar** — навигация Back/Forward, Admin, профиль
 
 ---
 
@@ -642,94 +697,6 @@ const socket = io("ws://localhost:8000", {
 
 ---
 
-## Инструкция по запуску
-
-### Предварительные требования
-
-- Python 3.10+
-- Node.js 20.19+ or 22.12+
-- PostgreSQL 16 (локально или Docker)
-
-### Шаг 1: Backend
-
-```powershell
-cd D:\Spotify_copy
-pip install -r requirements.txt
-```
-
-**PostgreSQL:**
-
-```powershell
-docker-compose up -d postgres
-```
-
-**Конфигурация:**
-
-Создайте `.env` в корне (см. `.env.example`).
-
-**Миграции:**
-
-```powershell
-.\migrate.ps1
-```
-
-**Запуск:**
-
-```powershell
-.\run.ps1
-```
-
-Backend: http://localhost:8000
-
-### Шаг 2: Frontend
-
-```powershell
-cd D:\Spotify_copy\frontend
-npm install
-npm run dev
-```
-
-Frontend: http://localhost:3000 (если порт занят — 3001, 3002 и т.д.)
-
-### Вариант: полностью в Docker
-
-```powershell
-docker-compose up -d
-```
-
-Backend: http://localhost:8000, Frontend: http://localhost:3000
-
-### Шаг 3: Seed (тестовые данные)
-
-```powershell
-Invoke-RestMethod -Uri "http://localhost:8000/api/seed/seed" -Method POST
-```
-
-Создаёт пользователя `test@example.com` / `test123`, альбомы и треки (URL — SoundHelix).
-
-Обновить URL треков без пересоздания БД:
-```powershell
-Invoke-RestMethod -Uri "http://localhost:8000/api/seed/seed?force=true" -Method POST
-```
-
-### Шаг 4: Проверка
-
-1. Откройте http://localhost:3000 (или порт, который выберет Vite)
-2. Войдите: `test@example.com` / `test123` или зарегистрируйтесь
-3. Начните воспроизведение музыки
-
-### Остановка
-
-- **Локально:** Ctrl+C в терминалах backend и frontend; `docker-compose down` для PostgreSQL
-- **Docker:** `docker-compose down`
-
-### API Документация
-
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-
----
-
 ## Чек-лист выполненной работы
 
 | Задача | Статус |
@@ -738,11 +705,11 @@ Invoke-RestMethod -Uri "http://localhost:8000/api/seed/seed?force=true" -Method 
 | Модели ORM (Track, Album, Playlist...) | ✅ |
 | Миграции Alembic | ✅ |
 | FastAPI + REST API | ✅ |
-| Аутентификация JWT | ✅ |
-| WebSocket (чат, активность) | ✅ |
+| Аутентификация JWT + автообновление при 401 | ✅ |
 | Поиск (Search) | ✅ |
 | Your Library (плейлисты) | ✅ |
 | Frontend (React + Vite) | ✅ |
+| Панель «Об исполнителе» (расписание концертов) | ✅ |
 | Дизайн в стиле Spotify | ✅ |
 | CORS настройка | ✅ |
 | Форматирование (autopep8) | ✅ |
@@ -751,4 +718,49 @@ Invoke-RestMethod -Uri "http://localhost:8000/api/seed/seed?force=true" -Method 
 
 ---
 
-*Документация обновлена 06.03.2026*
+## История изменений (Changelog)
+
+### 2026-03 (все изменения)
+
+**Аутентификация:**
+- `bcrypt` вместо `passlib` (хеширование паролей)
+- `requirements.txt`: `passlib[bcrypt]` заменён на `bcrypt>=4.0.0`
+- OAuth (Google, GitHub) удалён — только email + пароль
+- Axios interceptor: при 401 автоматически обновляет токен через `/api/auth/refresh` и повторяет запрос
+- События: `auth:logout` (при неудачном refresh), `auth:token-refreshed` (синхронизация store)
+- `setTokensFromRefresh` в useAuthStore
+
+**Треки и медиа:**
+- Треки используют внешние URL (SoundHelix) вместо локальных `/media/`
+- Seed: `POST /api/seed/seed?force=true` — обновление URL треков без пересоздания БД
+- Обложки альбомов из picsum.photos
+
+**Чат → панель «Об исполнителе»:**
+- Чат удалён: ChatPage, FriendsActivity, useChatStore
+- Добавлена **ArtistInfoSidebar** — выезжающая панель с информацией об артисте и mock-расписанием концертов
+- **useArtistStore** — store для выбранного исполнителя
+- Клик по имени артиста открывает панель (плеер, главная, альбом)
+- Кнопка «Исполнитель» в правом sidebar
+- Удалена кнопка Chat в Topbar
+
+**WebSocket:**
+- Отключён во frontend (AuthProvider больше не инициализирует socket)
+- Удалены вызовы `socket.emit` из usePlayerStore
+
+**Frontend:**
+- Axios baseURL: `/api` (через Vite proxy, CORS не требуется)
+- CORS: добавлены порты 3001, 3002
+
+**Docker:**
+- `run-docker.ps1` — скрипт запуска
+- `CORS_ORIGINS` в docker-compose для backend
+- Убраны volumes для media (треки — SoundHelix)
+- `frontend/public/media/` — папка с `.gitkeep`
+- `.env.docker.example` — пример для Docker
+
+**Документация:**
+- `DOCUMENTATION.md` и `STUDENT_GUIDE.md` обновлены
+
+---
+
+*Документация обновлена 11.03.2026*

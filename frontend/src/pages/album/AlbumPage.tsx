@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMusicStore } from "@/stores/useMusicStore";
 import { usePlayerStore } from "@/stores/usePlayerStore";
+import { useArtistStore } from "@/stores/useArtistStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
@@ -12,6 +13,7 @@ const AlbumPage = () => {
 	const { albumId } = useParams<{ albumId: string }>();
 	const { fetchAlbumById } = useMusicStore();
 	const { currentSong, isPlaying, togglePlay, playAlbum } = usePlayerStore();
+	const { openArtist } = useArtistStore();
 	const [album, setAlbum] = useState<Album | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -73,7 +75,12 @@ const AlbumPage = () => {
 							<p className="text-sm uppercase font-bold text-white/80 tracking-wider">Album</p>
 							<h1 className="text-4xl font-bold text-white mt-2 mb-4">{album.title}</h1>
 							<div className="flex items-center gap-2 text-sm text-spotify-text-muted">
-								<span className="font-semibold text-white">{album.artist}</span>
+								<button
+									onClick={() => openArtist({ name: album.artist, imageUrl: album.image_url })}
+									className="font-semibold text-white hover:text-spotify-green hover:underline"
+								>
+									{album.artist}
+								</button>
 								<span>•</span>
 								<span>{album.release_year}</span>
 								<span>•</span>

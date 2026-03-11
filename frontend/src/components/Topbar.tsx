@@ -1,14 +1,11 @@
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LayoutDashboardIcon, LogOut, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboardIcon, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { useChatStore } from "@/stores/useChatStore";
 
 const Topbar = () => {
 	const { user, logout, isAuthenticated } = useAuthStore();
-	const { isChatOpen, toggleChat } = useChatStore();
 	const navigate = useNavigate();
 
 	const handleLogout = async () => {
@@ -39,21 +36,6 @@ const Topbar = () => {
 			<div className="flex items-center gap-3">
 				{isAuthenticated && (
 					<>
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={toggleChat}
-							className={cn(
-								"rounded-full font-medium",
-								isChatOpen
-									? "bg-spotify-green text-black hover:bg-spotify-green-hover"
-									: "bg-white/10 text-white hover:bg-white/20"
-							)}
-						>
-							<MessageCircle className="size-4 mr-2" />
-							Chat
-						</Button>
-
 						<Link to="/admin">
 							<Button
 								variant="ghost"

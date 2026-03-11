@@ -16,60 +16,67 @@
 8. [Полезные команды](#полезные-команды)
 9. [Частые проблемы](#частые-проблемы)
 10. [Контрольные вопросы](#контрольные-вопросы)
+11. [Последние изменения](#последние-изменения-06032026)
 
 ---
 
 ## Быстрый старт
 
-Если нужно **просто запустить проект** и посмотреть, как он работает:
+### Вариант 1: Docker (самый простой)
 
-### 1. Запустить PostgreSQL
+**Требуется:** Docker Desktop
 
+```powershell
+cd D:\Spotify_copy
+.\run-docker.ps1
+```
+
+Или: `docker-compose up -d --build`
+
+После запуска:
+- **Приложение:** http://localhost:3000
+- **API:** http://localhost:8000/docs
+
+**Seed (тестовые данные):**
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/seed/seed" -Method POST
+```
+
+**Вход:** `test@example.com` / `test123`
+
+---
+
+### Вариант 2: Локальный запуск
+
+**1. PostgreSQL:**
 ```powershell
 cd D:\Spotify_copy
 docker-compose up -d postgres
 ```
 
-### 2. Настроить и запустить Backend
-
+**2. Backend:**
 ```powershell
-# Создать .env (скопировать из .env.example)
 copy .env.example .env
-
-# Установить зависимости
 pip install -r requirements.txt
-
-# Применить миграции
 python -m alembic upgrade head
-
-# Запустить сервер
-python -m uvicorn app.main:app --reload
+.\run.ps1
 ```
 
-### 3. Запустить Frontend
-
-В **новом терминале**:
-
+**3. Frontend** (в новом терминале):
 ```powershell
 cd D:\Spotify_copy\frontend
 npm install
 npm run dev
 ```
 
-### 4. Открыть в браузере
-
-- **Приложение:** http://localhost:3000 (если порт занят — 3001, 3002)
-- **API документация:** http://localhost:8000/docs
-
-### 5. Наполнить тестовыми данными
-
+**4. Seed:**
 ```powershell
 Invoke-RestMethod -Uri "http://localhost:8000/api/seed/seed" -Method POST
 ```
 
-Создаёт пользователя **test@example.com** / **test123**, альбомы и треки (аудио — SoundHelix).
+**5. Открыть:** http://localhost:3000
 
-Или через Swagger UI: http://localhost:8000/docs → Seed → POST /api/seed/seed → Try it out → Execute
+**Важно:** Ошибка 500 обычно означает, что PostgreSQL не запущен. Запустите `docker-compose up -d postgres`.
 
 ---
 
@@ -112,12 +119,17 @@ docker --version   # если используете Docker
 
 ### Вариант B: Полный Docker (всё в контейнерах)
 
+**Требуется:** Docker Desktop
+
 ```powershell
-docker-compose up --build
+.\run-docker.ps1
+# или
+docker-compose up -d --build
 ```
 
 - Frontend: http://localhost:3000
 - Backend: http://localhost:8000
+- Seed: `Invoke-RestMethod -Uri "http://localhost:8000/api/seed/seed" -Method POST`
 
 ### Порты
 
@@ -143,20 +155,20 @@ app/
 ├── config.py         # Конфигурация из .env
 ├── database.py       # Подключение к БД
 ├── dependencies.py   # get_current_user_id для защищённых routes
-├── utils.py          # Хеширование паролей, JWT
+├── utils.py          # Хеширование паролей (bcrypt), JWT
 ├── schemas.py        # Pydantic-схемы для API
 ├── models/           # ORM-модели (таблицы БД)
 └── routes/           # API endpoints
-    ├── auth.py       # /api/auth - регистрация, вход
+    ├── auth.py       # /api/auth - регистрация, вход, refresh
     ├── songs.py      # /api/songs - треки
     ├── albums.py     # /api/albums - альбомы
     ├── playlists.py  # /api/playlists - плейлисты
-    ├── search.py         # /api/search - поиск
-    ├── users.py          # /api/users - пользователи
-    ├── seed.py           # /api/seed - тестовые данные
-    ├── player.py         # /api/player - история прослушиваний
+    ├── search.py     # /api/search - поиск
+    ├── users.py      # /api/users - пользователи
+    ├── seed.py       # /api/seed - тестовые данные
+    ├── player.py     # /api/player - история прослушиваний
     ├── recommendations.py # /api/recommendations - рекомендации
-    └── websocket.py      # WebSocket - чат, активность
+    └── websocket.py  # WebSocket (не используется во frontend)
 ```
 
 ### Frontend (папка `frontend/src/`)
@@ -170,14 +182,13 @@ src/
 │   ├── search/      # Поиск
 │   ├── library/     # Your Library
 │   ├── album/       # Страница альбома
-│   ├── chat/        # Чат
 │   ├── admin/       # Админ-панель
 │   └── login/       # Вход/регистрация
-├── layout/          # MainLayout, Sidebar, Player
-├── stores/          # Zustand (auth, player, music, chat)
+├── layout/          # MainLayout, Sidebar, ArtistInfoSidebar, Player
+├── stores/          # Zustand (auth, player, music, artist)
 ├── components/      # UI-компоненты
 ├── providers/       # AuthProvider
-├── lib/             # axios, utils
+├── lib/             # axios (с interceptor для 401), utils
 └── types/           # TypeScript типы
 ```
 
@@ -200,7 +211,7 @@ src/
 | GET | /api/albums | Все альбомы |
 | GET | /api/search?q=rock | Поиск |
 | GET | /api/playlists/me | Мои плейлисты (нужен Bearer token) |
-| POST | /api/seed | Наполнить БД тестовыми данными |
+| POST | /api/seed/seed | Наполнить БД тестовыми данными |
 
 ### Пример: регистрация
 
@@ -295,6 +306,12 @@ useEffect(() => {
 Vite проксирует `/api` на backend — CORS не требуется.  
 Bearer token добавляется автоматически из localStorage.
 
+**При 401:** axios interceptor автоматически обновляет токен через `/api/auth/refresh` и повторяет запрос. При неудаче — логаут.
+
+### Панель «Об исполнителе»
+
+Клик по имени артиста (в плеере, на главной, на странице альбома) или кнопка «Исполнитель» справа открывает выезжающую панель с информацией и mock-расписанием концертов.
+
 ---
 
 ## Полезные команды
@@ -374,6 +391,10 @@ Frontend автоматически переключится на 3001, 3002 и 
 Invoke-RestMethod -Uri "http://localhost:8000/api/seed/seed?force=true" -Method POST
 ```
 
+### 401 при переходе между страницами
+
+Должно быть исправлено: axios interceptor при 401 автоматически обновляет токен. Если проблема остаётся — проверьте, что в localStorage есть `spotify_tokens` с `refresh_token`.
+
 ---
 
 ## Контрольные вопросы
@@ -384,8 +405,8 @@ Invoke-RestMethod -Uri "http://localhost:8000/api/seed/seed?force=true" -Method 
 4. Что делает `Depends(get_db)` в FastAPI?
 5. В каком порядке создавать таблицы с внешними ключами?
 6. Почему playlists ссылаются на user_profiles, а не на auth_users?
-7. Как работает JWT аутентификация в проекте?
-8. Для чего нужен WebSocket и какие события он обрабатывает?
+7. Как работает JWT аутентификация и автообновление токена при 401?
+8. Как открывается панель «Об исполнителе» и откуда берётся расписание концертов?
 
 ---
 
@@ -399,4 +420,14 @@ Invoke-RestMethod -Uri "http://localhost:8000/api/seed/seed?force=true" -Method 
 
 ---
 
-*Гайд для студентов. Spotify Clone. Обновлено 06.03.2026*
+## Последние изменения (11.03.2026)
+
+- **Запуск:** Docker — `.\run-docker.ps1`; локально — PostgreSQL + backend + frontend
+- **Чат удалён** → панель «Об исполнителе» (клик по имени артиста)
+- **Авторизация:** bcrypt, автообновление токена при 401
+- **Треки:** SoundHelix (внешние URL), seed `?force=true` для обновления
+- **WebSocket** отключён во frontend
+
+---
+
+*Гайд для студентов. Spotify Clone. Обновлено 11.03.2026*
