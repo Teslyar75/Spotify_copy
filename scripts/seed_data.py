@@ -111,18 +111,19 @@ def create_test_data():
             for track_data in TEST_TRACKS[start_idx:start_idx + 3]:
                 track = Track(
                     **track_data,
-                    album_id=album.id
+                    album_id=album.id,
+                    album_name=album.title  # <- добавлено \ не отрабатывал seed
                 )
                 db.add(track)
             db.commit()
         
         # Добавляем треки без альбома
-        print("\nСоздание треков без альбома...")
-        for track_data in TEST_TRACKS[9:]:
-            track = Track(**track_data)
-            db.add(track)
-        db.commit()
-        print(f"✓ Создано {len(TEST_TRACKS)} треков")
+        # print("\nСоздание треков без альбома...")
+        # for track_data in TEST_TRACKS[9:]:
+        #     track = Track(**track_data)
+        #     db.add(track)
+        # db.commit()
+        # print(f"✓ Создано {len(TEST_TRACKS)} треков")  <- добавлено \ не отрабатывал seed \ логический конфликт треки без альбома не могут быть созданы из-за ограничения NOT NULL в модели Track
 
         # Создаем тестовый плейлист
         print("\nСоздание тестового плейлиста...")

@@ -10,6 +10,7 @@ import LoginPage from "./pages/login/LoginPage";
 import NotFoundPage from "./pages/404/NotFoundPage";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./stores/useAuthStore";
+import NewPlaylistPage from "./pages/AddPlaylist/AddPlaylistPage";
 
 function App() {
 	const { isAuthenticated } = useAuthStore();
@@ -35,6 +36,11 @@ function App() {
 						element={isAuthenticated ? <LibraryPage /> : <Navigate to='/login' />}
 					/>
 					<Route
+  						path='/playlists/new'
+  						element={isAuthenticated ? <NewPlaylistPage /> : <Navigate to='/login' />}
+					/>
+
+					<Route
 						path='/chat'
 						element={isAuthenticated ? <ChatPage /> : <Navigate to='/login' />}
 					/>
@@ -48,6 +54,7 @@ function App() {
 					/>
 					<Route path='*' element={<NotFoundPage />} />
 				</Route>
+
 			</Routes>
 			<Toaster />
 		</>

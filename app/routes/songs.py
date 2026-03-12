@@ -31,14 +31,15 @@ def get_all_songs(
     db: Session = Depends(get_db),
 ):
     """Получить треки с пагинацией (доступно всем)."""
+    start = offset
+    stop = offset + min(limit, MAX_LIMIT)
     tracks = (
         db.query(Track)
         .order_by(Track.created_at.desc())
-        .offset(offset)
-        .limit(limit)
+        .slice(start, stop)  # безопасно для PostgreSQL \ падало в f405
         .all()
     )
-    return tracks
+    return tracks 
 
 
 @router.get("/featured", response_model=list[TrackResponse])
