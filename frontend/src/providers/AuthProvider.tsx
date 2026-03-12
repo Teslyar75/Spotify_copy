@@ -1,31 +1,34 @@
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useChatStore } from "@/stores/useChatStore";
 
 interface AuthProviderProps {
 	children: React.ReactNode;
 }
 
 const AuthProvider = ({ children }: AuthProviderProps) => {
-	const { checkAuth, isAuthenticated, user, tokens } = useAuthStore();
-	const { initSocket, disconnectSocket } = useChatStore();
+	const { checkAuth, reset, setTokensFromRefresh } = useAuthStore();
 
 	useEffect(() => {
 		checkAuth();
 	}, [checkAuth]);
 
 	useEffect(() => {
-		if (isAuthenticated && user && tokens) {
-			// Initialize WebSocket connection
-			initSocket(user.id, tokens.access_token);
-		} else {
-			disconnectSocket();
-		}
-
-		return () => {
-			disconnectSocket();
+		const handleLogout = () => {
+			reset();
+			window.location.href = "/login";
 		};
-	}, [isAuthenticated, user, tokens, initSocket, disconnectSocket]);
+		window.addEventListener("auth:logout", handleLogout);
+		return () => window.removeEventListener("auth:logout", handleLogout);
+	}, [reset]);
+
+	useEffect(() => {
+		const handleTokenRefreshed = (e: CustomEvent<{ access_token: string; refresh_token: string }>) => {
+			setTokensFromRefresh(e.detail);
+		};
+		window.addEventListener("auth:token-refreshed", handleTokenRefreshed as EventListener);
+		return () =>
+			window.removeEventListener("auth:token-refreshed", handleTokenRefreshed as EventListener);
+	}, [setTokensFromRefresh]);
 
 	return <>{children}</>;
 };

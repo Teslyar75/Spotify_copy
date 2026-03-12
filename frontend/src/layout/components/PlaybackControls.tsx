@@ -1,4 +1,5 @@
 import { usePlayerStore } from "@/stores/usePlayerStore";
+import { useArtistStore } from "@/stores/useArtistStore";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -37,6 +38,7 @@ export const PlaybackControls = () => {
 		setProgress,
 		setDuration,
 	} = usePlayerStore();
+	const { openArtist } = useArtistStore();
 
 	const [isShuffled, setIsShuffled] = useState(false);
 	const [repeatMode, setRepeatMode] = useState<"off" | "all" | "one">("off");
@@ -86,7 +88,12 @@ export const PlaybackControls = () => {
 				/>
 				<div className="overflow-hidden min-w-0">
 					<p className="text-sm font-medium text-white truncate">{currentSong.title}</p>
-					<p className="text-xs text-spotify-text-muted truncate">{currentSong.artist}</p>
+					<button
+						onClick={() => openArtist({ name: currentSong.artist, imageUrl: currentSong.image_url })}
+						className="text-xs text-spotify-text-muted truncate hover:text-spotify-green hover:underline text-left block w-full"
+					>
+						{currentSong.artist}
+					</button>
 				</div>
 			</div>
 

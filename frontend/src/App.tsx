@@ -1,7 +1,6 @@
 import { Route, Routes, Navigate } from "react-router-dom";
 import HomePage from "./pages/home/HomePage";
 import MainLayout from "./layout/MainLayout";
-import ChatPage from "./pages/chat/ChatPage";
 import AlbumPage from "./pages/album/AlbumPage";
 import SearchPage from "./pages/search/SearchPage";
 import LibraryPage from "./pages/library/LibraryPage";
@@ -39,12 +38,6 @@ function App() {
   						path='/playlists/new'
   						element={isAuthenticated ? <NewPlaylistPage /> : <Navigate to='/login' />}
 					/>
-
-					<Route
-						path='/chat'
-						element={isAuthenticated ? <ChatPage /> : <Navigate to='/login' />}
-					/>
-					<Route
 						path='/albums/:albumId'
 						element={isAuthenticated ? <AlbumPage /> : <Navigate to='/login' />}
 					/>

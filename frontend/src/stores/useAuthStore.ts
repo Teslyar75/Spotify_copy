@@ -14,6 +14,7 @@ interface AuthStore {
 	logout: () => Promise<void>;
 	refreshToken: () => Promise<void>;
 	checkAuth: () => Promise<void>;
+	setTokensFromRefresh: (tokens: AuthTokens) => void;
 	reset: () => void;
 }
 
@@ -121,6 +122,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 		} catch (error) {
 			console.error("Check auth error:", error);
 		}
+	},
+
+	// Слушаем обновление токена из axios interceptor
+	setTokensFromRefresh: (tokens: AuthTokens) => {
+		set({ tokens, isAuthenticated: true });
 	},
 
 	reset: () => {

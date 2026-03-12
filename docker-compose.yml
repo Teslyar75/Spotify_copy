@@ -23,6 +23,7 @@ services:
     container_name: spotify_backend
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/spotify_clone
+      CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
       SECRET_KEY: ${SECRET_KEY:-super-secret-key-change-in-production-xyz123}
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: "30"
@@ -36,7 +37,6 @@ services:
       - ./app:/app/app
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
-      - ./frontend/public/media:/app/static/media:ro
     command: >
       sh -c "python -m alembic upgrade head &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000"
@@ -53,8 +53,6 @@ services:
       - "3000:80"
     depends_on:
       - backend
-    volumes:
-      - ./frontend/public/media:/usr/share/nginx/html/media:ro
 
 volumes:
   postgres_data:

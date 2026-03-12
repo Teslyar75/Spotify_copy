@@ -2,6 +2,7 @@ import { Song } from "@/types";
 import { Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlayerStore } from "@/stores/usePlayerStore";
+import { useArtistStore } from "@/stores/useArtistStore";
 import { Skeleton } from "@/components/skeletons/Skeleton";
 import { Link } from "react-router-dom";
 
@@ -13,6 +14,7 @@ interface SectionGridProps {
 
 const SectionGrid = ({ title, songs, isLoading }: SectionGridProps) => {
 	const { setCurrentSong, isPlaying, currentSong } = usePlayerStore();
+	const { openArtist } = useArtistStore();
 
 	const handlePlay = (e: React.MouseEvent, song: Song) => {
 		e.preventDefault();
@@ -69,7 +71,16 @@ const SectionGrid = ({ title, songs, isLoading }: SectionGridProps) => {
 								</Button>
 							</div>
 							<h3 className="font-semibold text-white truncate mb-1">{song.title}</h3>
-							<p className="text-sm text-spotify-text-muted truncate">{song.artist}</p>
+							<button
+								onClick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									openArtist({ name: song.artist, imageUrl: song.image_url });
+								}}
+								className="text-sm text-spotify-text-muted truncate hover:text-spotify-green hover:underline text-left block w-full"
+							>
+								{song.artist}
+							</button>
 						</Link>
 					);
 				})}
