@@ -38,6 +38,7 @@ export const PlaybackControls = () => {
 		setProgress,
 		setDuration,
 	} = usePlayerStore();
+
 	const { openArtist } = useArtistStore();
 
 	const [isShuffled, setIsShuffled] = useState(false);
@@ -78,18 +79,27 @@ export const PlaybackControls = () => {
 	if (!currentSong) return null;
 
 	return (
-		<div className="h-[90px] min-h-[90px] bg-[#181818] border-t border-white/10 px-4 flex items-center justify-between gap-4">
+		<div className="border-t border-white/10 bg-[#181818] px-3 py-2 md:px-4 md:py-3">
+			<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4">
 			{/* Song Info */}
-			<div className="flex items-center gap-4 w-[30%] min-w-[180px]">
+			<div className="flex items-center gap-3 min-w-0 md:w-[28%] md:min-w-[180px]">
 				<img
 					src={currentSong.image_url || "/album-placeholder.png"}
 					alt={currentSong.title}
-					className="h-14 w-14 rounded object-cover shadow-lg"
+					className="h-12 w-12 md:h-14 md:w-14 rounded object-cover shadow-lg shrink-0"
 				/>
-				<div className="overflow-hidden min-w-0">
-					<p className="text-sm font-medium text-white truncate">{currentSong.title}</p>
+				<div className="min-w-0 overflow-hidden">
+					<p className="text-sm md:text-sm font-medium text-white truncate">
+						{currentSong.title}
+					</p>
+
 					<button
-						onClick={() => openArtist({ name: currentSong.artist, imageUrl: currentSong.image_url })}
+						onClick={() => 
+							openArtist({ 
+								name: currentSong.artist, 
+								imageUrl: currentSong.image_url,
+							})
+						}
 						className="text-xs text-spotify-text-muted truncate hover:text-spotify-green hover:underline text-left block w-full"
 					>
 						{currentSong.artist}
@@ -98,48 +108,62 @@ export const PlaybackControls = () => {
 			</div>
 
 			{/* Player Controls - центр как в Spotify */}
-			<div className="flex flex-col items-center justify-center gap-2 flex-1 max-w-[722px]">
-				<div className="flex items-center gap-2">
+			<div className="flex flex-col gap-2 md:flex-1 md:max-w-[640px]">
+				<div className="flex items-center justify-center gap-1 sm:gap-2">
 					<Button
 						variant="ghost"
 						size="icon"
 						onClick={() => setIsShuffled(!isShuffled)}
-						className={`h-8 w-8 ${isShuffled ? "text-spotify-green" : "text-spotify-text-muted hover:text-white"}`}
+						className={`hidden md:flex h-8 w-8 ${
+							isShuffled
+								? "text-spotify-green" 
+								: "text-spotify-text-muted hover:text-white"
+							}`}
 					>
 						<Shuffle className="h-4 w-4" />
 					</Button>
+
 					<Button
 						variant="ghost"
 						size="icon"
 						onClick={playPrevious}
 						className="h-8 w-8 text-spotify-text-muted hover:text-white"
 					>
-						<SkipBack className="h-5 w-5" />
+						<SkipBack className="h-4 w-4 md:h-5 md:w-5" />
 					</Button>
+
 					<Button
 						size="icon"
 						onClick={togglePlay}
-						className="h-10 w-10 rounded-full bg-white hover:bg-white hover:scale-105 text-black border-0"
+						className="h-9 w-9 md:h-10 md:w-10 rounded-full bg-white hover:bg-white hover:scale-105 text-black border-0"
 					>
 						{isPlaying ? (
-							<Pause className="h-5 w-5" fill="currentColor" />
+							<Pause className="h-4 w-4 md:h-5 md:w-5" fill="currentColor" />
 						) : (
-							<Play className="h-5 w-5 ml-0.5" fill="currentColor" />
+							<Play className="h-4 w-4 md:h-5 md:w-5 ml-0.5"
+							 	  fill="currentColor" 
+							/>
 						)}
 					</Button>
+
 					<Button
 						variant="ghost"
 						size="icon"
 						onClick={playNext}
 						className="h-8 w-8 text-spotify-text-muted hover:text-white"
 					>
-						<SkipForward className="h-5 w-5" />
+						<SkipForward className="h-4 w-4 md:h-5 md:w-5" />
 					</Button>
+
 					<Button
 						variant="ghost"
 						size="icon"
 						onClick={toggleRepeat}
-						className={`h-8 w-8 ${repeatMode !== "off" ? "text-spotify-green" : "text-spotify-text-muted hover:text-white"}`}
+						className={`hidden md:flex h-8 w-8 ${
+							repeatMode !== "off" 
+								? "text-spotify-green" 
+								: "text-spotify-text-muted hover:text-white"
+						}`}
 					>
 						{repeatMode === "one" ? (
 							<Repeat1 className="h-4 w-4" />
@@ -150,9 +174,10 @@ export const PlaybackControls = () => {
 				</div>
 
 				<div className="flex items-center gap-2 w-full">
-					<span className="text-xs text-spotify-text-muted w-10 text-right">
+					<span className="text-[11px] md:text-xs text-spotify-text-muted w-8 md:w-10 text-right">
 						{formatTime(progress)}
 					</span>
+
 					<Slider
 						value={[progress]}
 						max={duration || 100}
@@ -160,14 +185,15 @@ export const PlaybackControls = () => {
 						onValueChange={handleSeek}
 						className="flex-1 [&_[data-orientation=horizontal]]:h-1"
 					/>
-					<span className="text-xs text-spotify-text-muted w-10">
+
+					<span className="text-[11px] md:text-xs text-spotify-text-muted w-8 md:w-10">
 						{formatTime(duration)}
 					</span>
 				</div>
 			</div>
 
 			{/* Volume */}
-			<div className="flex items-center justify-end gap-2 w-[30%] min-w-[180px]">
+			<div className="hidden md:flex items-center justify-end gap-2 md:w-[24%] lg:w-[30%] md:min-w-[140px]">
 				<Button
 					variant="ghost"
 					size="icon"
@@ -180,14 +206,16 @@ export const PlaybackControls = () => {
 						<Volume2 className="h-4 w-4" />
 					)}
 				</Button>
+
 				<Slider
 					value={[isMuted ? 0 : volume]}
 					max={1}
 					step={0.01}
 					onValueChange={(v) => setVolume(v[0])}
-					className="w-24 [&_[data-orientation=horizontal]]:h-1"
+					className="w-20 lg:w-24 [&_[data-orientation=horizontal]]:h-1"
 				/>
 			</div>
 		</div>
+	</div>
 	);
 };

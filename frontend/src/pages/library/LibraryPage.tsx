@@ -28,6 +28,7 @@ const LibraryPage = () => {
 				setIsLoading(false);
 			}
 		};
+
 		loadPlaylists();
 	}, []);
 
@@ -46,15 +47,19 @@ const LibraryPage = () => {
 	};
 
 	return (
-		<main className="flex-1 flex flex-col min-h-0 bg-spotify-charcoal">
-			<div className="h-[340px] min-h-[340px] bg-gradient-to-b from-indigo-900/60 via-spotify-charcoal to-spotify-charcoal relative">
+		<main className="flex flex-1 flex-col min-h-0 overflow-hidden bg-spotify-charcoal">
+			<div className="relative h-[220px] min-h-[220px] bg-gradient-to-b from-indigo-900/60 via-spotify-charcoal to-spotify-charcoal sm:h-[260px] sm:min-h-[260px] md:h-[300px] md:min-h-[300px] lg:h-[340px] lg:min-h-[340px]">
 				<Topbar />
-				<div className="absolute bottom-0 left-0 right-0 p-6">
-					<h1 className="text-4xl font-bold text-white mb-6">Your Library</h1>
-					<div className="flex gap-2">
+
+				<div className="absolute bottom-0 left-0 right-0 px-4 pb-5 sm:px-5 md:px-6 md:pb-6">
+					<h1 className="mb-4 text-2xl font-bold text-white sm:text-3xl md:mb-5 md:text-4xl">
+						Your Library
+					</h1>
+
+					<div className="flex flex-wrap gap-2">
 						<button
 							onClick={() => setActiveTab("playlists")}
-							className={`px-6 py-2 rounded-full font-medium transition-colors ${
+							className={`rounded-full px-4 py-2 text-sm font-medium transition-colors sm:px-5 md:px-6 ${
 								activeTab === "playlists"
 									? "bg-white text-black"
 									: "bg-white/10 text-white hover:bg-white/20"
@@ -62,9 +67,10 @@ const LibraryPage = () => {
 						>
 							Playlists
 						</button>
+
 						<button
 							onClick={() => setActiveTab("albums")}
-							className={`px-6 py-2 rounded-full font-medium transition-colors ${
+							className={`rounded-full px-4 py-2 text-sm font-medium transition-colors sm:px-5 md:px-6 ${
 								activeTab === "albums"
 									? "bg-white text-black"
 									: "bg-white/10 text-white hover:bg-white/20"
@@ -77,78 +83,95 @@ const LibraryPage = () => {
 			</div>
 
 			<ScrollArea className="flex-1 scrollbar-spotify">
-				<div className="p-6">
+				<div className="relative z-10 -mt-6 px-4 pb-28 pt-0 sm:-mt-7 sm:px-5 md:-mt-8 md:px-6 md:pb-32">
 					{isLoading ? (
-						<p className="text-spotify-text-muted">Loading...</p>
+						<p className="text-sm text-spotify-text-muted">Loading...</p>
 					) : activeTab === "playlists" ? (
-						<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+						<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
 							{/* Create playlist card */}
-							<div className="relative p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors min-h-[200px] flex items-center justify-center border-2 border-dashed border-white/20">
-								<Plus className="h-12 w-12 text-spotify-text-muted" />
-								<p className="absolute bottom-4 left-4 right-4 text-sm font-medium text-white truncate">
+							<div className="relative flex min-h-[170px] items-center justify-center rounded-lg border-2 border-dashed border-white/20 bg-white/5 p-3 transition-colors hover:bg-white/10 sm:min-h-[190px] sm:p-4">
+								<Plus className="h-10 w-10 text-spotify-text-muted sm:h-12 sm:w-12" />
+								<p className="absolute bottom-3 left-3 right-3 truncate text-sm font-medium text-white sm:bottom-4 sm:left-4 sm:right-4">
 									Create playlist
 								</p>
 							</div>
+
 							{playlists.map((playlist) => (
 								<div
 									key={playlist.id}
-									className="group p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+									className="group cursor-pointer rounded-lg bg-white/5 p-3 transition-colors hover:bg-white/10 sm:p-4"
 									onClick={() => handlePlayPlaylist(playlist)}
 								>
 									<div className="relative mb-3">
-										<div className="aspect-square rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-											<Play className="h-12 w-12 text-white/80" />
+										<div className="aspect-square w-full rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+											<Play className="h-10 w-10 text-white/80 sm:h-12 sm:w-12" />
 										</div>
+
 										<Button
 											size="icon"
-											className="absolute bottom-2 right-2 h-12 w-12 rounded-full bg-spotify-green hover:bg-spotify-green-hover opacity-0 group-hover:opacity-100 shadow-xl"
+											className="absolute bottom-2 right-2 h-10 w-10 rounded-full bg-spotify-green opacity-0 shadow-xl transition-all hover:bg-spotify-green-hover group-hover:opacity-100 md:h-12 md:w-12"
 										>
-											<Play className="h-5 w-5 text-black ml-0.5" fill="currentColor" />
+											<Play
+												className="ml-0.5 h-4 w-4 text-black md:h-5 md:w-5"
+												fill="currentColor"
+											/>
 										</Button>
 									</div>
-									<p className="font-medium text-white truncate">{playlist.title}</p>
-									<p className="text-sm text-spotify-text-muted">
+
+									<p className="truncate text-sm font-medium text-white sm:text-base">
+										{playlist.title}
+									</p>
+									<p className="text-xs text-spotify-text-muted sm:text-sm">
 										Playlist • {playlist.tracks?.length || 0} songs
 									</p>
 								</div>
 							))}
 						</div>
 					) : (
-						<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+						<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
 							{albums.map((album) => (
 								<div
 									key={album.id}
-									className="group p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+									className="group cursor-pointer rounded-lg bg-white/5 p-3 transition-colors hover:bg-white/10 sm:p-4"
 									onClick={() => handlePlayAlbum(album)}
 								>
 									<div className="relative mb-3">
 										<img
 											src={album.image_url || "/album-placeholder.png"}
 											alt={album.title}
-											className="aspect-square object-cover rounded-lg w-full"
+											className="aspect-square w-full rounded-lg object-cover"
 										/>
+
 										<Button
 											size="icon"
-											className="absolute bottom-2 right-2 h-12 w-12 rounded-full bg-spotify-green hover:bg-spotify-green-hover opacity-0 group-hover:opacity-100 shadow-xl"
+											className="absolute bottom-2 right-2 h-10 w-10 rounded-full bg-spotify-green opacity-0 shadow-xl transition-all hover:bg-spotify-green-hover group-hover:opacity-100 md:h-12 md:w-12"
 										>
-											<Play className="h-5 w-5 text-black ml-0.5" fill="currentColor" />
+											<Play
+												className="ml-0.5 h-4 w-4 text-black md:h-5 md:w-5"
+												fill="currentColor"
+											/>
 										</Button>
 									</div>
-									<p className="font-medium text-white truncate">{album.title}</p>
-									<p className="text-sm text-spotify-text-muted truncate">{album.artist}</p>
+
+									<p className="truncate text-sm font-medium text-white sm:text-base">
+										{album.title}
+									</p>
+									<p className="truncate text-xs text-spotify-text-muted sm:text-sm">
+										{album.artist}
+									</p>
 								</div>
 							))}
 						</div>
 					)}
 
 					{activeTab === "playlists" && playlists.length === 0 && !isLoading && (
-						<p className="text-spotify-text-muted py-8">
+						<p className="py-8 text-sm text-spotify-text-muted">
 							You don't have any playlists yet. Create one to get started.
 						</p>
 					)}
 
 					{activeTab === "albums" && albums.length === 0 && !isLoading && (
-						<p className="text-spotify-text-muted py-8">
+						<p className="py-8 text-sm text-spotify-text-muted">
 							No albums in your library. Browse and add some!
 						</p>
 					)}

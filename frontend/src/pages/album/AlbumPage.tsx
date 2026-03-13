@@ -25,6 +25,7 @@ const AlbumPage = () => {
 			setAlbum(data);
 			setIsLoading(false);
 		};
+
 		loadAlbum();
 	}, [albumId, fetchAlbumById]);
 
@@ -50,33 +51,44 @@ const AlbumPage = () => {
 
 	if (isLoading || !album) {
 		return (
-			<main className="flex-1 flex flex-col min-h-0 bg-spotify-charcoal">
+			<main className="flex flex-1 flex-col min-h-0 overflow-hidden bg-spotify-charcoal">
 				<Topbar />
-				<div className="p-8 flex items-center justify-center flex-1">
-					<p className="text-spotify-text-muted">Loading...</p>
+				<div className="flex flex-1 items-center justify-center p-6 sm:p-8">
+					<p className="text-sm text-spotify-text-muted">Loading...</p>
 				</div>
 			</main>
 		);
 	}
 
+	const isAlbumPlaying = isPlaying && album.songs.some((s) => s.id === currentSong?.id);
+
 	return (
-		<main className="flex-1 flex flex-col min-h-0 bg-spotify-charcoal">
-			{/* Header with gradient from album art */}
-			<div className="h-[340px] min-h-[340px] bg-gradient-to-b from-indigo-900/60 via-spotify-charcoal to-spotify-charcoal relative">
+		<main className="flex flex-1 flex-col min-h-0 overflow-hidden bg-spotify-charcoal">
+			<div className="relative h-[260px] min-h-[260px] bg-gradient-to-b from-indigo-900/60 via-spotify-charcoal to-spotify-charcoal sm:h-[320px] sm:min-h-[320px] md:h-[360px] md:min-h-[360px] lg:h-[420px] lg:min-h-[420px]">
 				<Topbar />
-				<div className="absolute bottom-0 left-0 right-0 p-6">
-					<div className="flex gap-6 items-end">
+
+				<div className="absolute bottom-0 left-0 right-0 px-4 pb-5 sm:px-5 md:px-6 md:pb-6">
+					<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-5 lg:gap-6">
 						<img
 							src={album.image_url || "/album-placeholder.png"}
 							alt={album.title}
-							className="h-48 w-48 object-cover shadow-2xl rounded"
+							className="h-28 w-28 rounded object-cover shadow-2xl sm:h-36 sm:w-36 md:h-44 md:w-44 lg:h-48 lg:w-48"
 						/>
-						<div className="flex flex-col justify-end pb-2">
-							<p className="text-sm uppercase font-bold text-white/80 tracking-wider">Album</p>
-							<h1 className="text-4xl font-bold text-white mt-2 mb-4">{album.title}</h1>
-							<div className="flex items-center gap-2 text-sm text-spotify-text-muted">
+
+						<div className="flex min-w-0 flex-col justify-end">
+							<p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/80 sm:text-xs">
+								Album
+							</p>
+
+							<h1 className="mt-2 mb-3 text-2xl font-bold text-white sm:text-3xl md:text-4xl lg:mb-4">
+								{album.title}
+							</h1>
+
+							<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-spotify-text-muted sm:text-sm">
 								<button
-									onClick={() => openArtist({ name: album.artist, imageUrl: album.image_url })}
+									onClick={() =>
+										openArtist({ name: album.artist, imageUrl: album.image_url })
+									}
 									className="font-semibold text-white hover:text-spotify-green hover:underline"
 								>
 									{album.artist}
@@ -91,76 +103,81 @@ const AlbumPage = () => {
 				</div>
 			</div>
 
-			{/* Play button & tracks */}
-			<div className="bg-spotify-charcoal">
-				<div className="px-6 pb-4">
-					<Button
-						size="icon"
-						className="h-14 w-14 rounded-full bg-spotify-green hover:bg-spotify-green-hover hover:scale-105 transition-all shadow-xl"
-						onClick={handlePlayAlbum}
-					>
-						{isPlaying && album.songs.some((s) => s.id === currentSong?.id) ? (
-							<Pause className="h-7 w-7 text-black" fill="currentColor" />
-						) : (
-							<Play className="h-7 w-7 text-black ml-0.5" fill="currentColor" />
-						)}
-					</Button>
-				</div>
+			<ScrollArea className="flex-1 scrollbar-spotify">
+				<div className="relative z-10 -mt-4 px-4 pb-28 pt-0 sm:-mt-5 sm:px-5 md:-mt-6 md:px-6 md:pb-32">
+					<div className="pb-4">
+						<Button
+							size="icon"
+							className="h-12 w-12 rounded-full bg-spotify-green shadow-xl transition-all hover:scale-105 hover:bg-spotify-green-hover sm:h-14 sm:w-14"
+							onClick={handlePlayAlbum}
+						>
+							{isAlbumPlaying ? (
+								<Pause className="h-6 w-6 text-black sm:h-7 sm:w-7" fill="currentColor" />
+							) : (
+								<Play
+									className="ml-0.5 h-6 w-6 text-black sm:h-7 sm:w-7"
+									fill="currentColor"
+								/>
+							)}
+						</Button>
+					</div>
 
-				<ScrollArea className="h-[calc(100vh-480px)] scrollbar-spotify">
-					<div className="px-6 space-y-1">
+					<div className="space-y-1">
 						{album.songs.map((song, index) => {
 							const isCurrentSong = currentSong?.id === song.id;
 
 							return (
 								<div
 									key={song.id}
-									className={`group flex items-center gap-4 px-3 py-2 rounded-md cursor-pointer transition-colors ${
+									className={`group flex cursor-pointer items-center gap-3 rounded-md px-2.5 py-2 transition-colors sm:gap-4 sm:px-3 ${
 										isCurrentSong ? "bg-white/10" : "hover:bg-white/5"
 									}`}
 									onClick={() => handlePlaySong(song, index)}
 								>
-									<div className="w-8 text-center text-spotify-text-muted group-hover:text-white">
+									<div className="flex w-6 shrink-0 items-center justify-center text-xs text-spotify-text-muted group-hover:text-white sm:w-8 sm:text-sm">
 										{isCurrentSong && isPlaying ? (
-											<div className="flex gap-0.5 justify-center items-center h-4">
-												<div className="w-1 h-3 bg-spotify-green animate-pulse rounded" />
-												<div className="w-1 h-4 bg-spotify-green animate-pulse rounded delay-75" />
-												<div className="w-1 h-2 bg-spotify-green animate-pulse rounded delay-150" />
+											<div className="flex h-4 items-center justify-center gap-0.5">
+												<div className="h-3 w-1 rounded bg-spotify-green animate-pulse" />
+												<div className="h-4 w-1 rounded bg-spotify-green animate-pulse delay-75" />
+												<div className="h-2 w-1 rounded bg-spotify-green animate-pulse delay-150" />
 											</div>
 										) : (
 											<span className="group-hover:hidden">{index + 1}</span>
 										)}
 									</div>
-									<div className="w-8 hidden group-hover:block">
-										<Play className="h-4 w-4 mx-auto text-white" fill="currentColor" />
+
+									<div className="hidden w-6 shrink-0 group-hover:flex items-center justify-center sm:w-8">
+										<Play className="h-4 w-4 text-white" fill="currentColor" />
 									</div>
 
 									<img
 										src={song.image_url || "/album-placeholder.png"}
 										alt={song.title}
-										className="h-10 w-10 rounded object-cover"
+										className="h-10 w-10 shrink-0 rounded object-cover sm:h-11 sm:w-11"
 									/>
 
-									<div className="flex-1 min-w-0">
+									<div className="min-w-0 flex-1">
 										<p
-											className={`font-medium truncate ${
+											className={`truncate text-sm font-medium sm:text-base ${
 												isCurrentSong ? "text-spotify-green" : "text-white"
 											}`}
 										>
 											{song.title}
 										</p>
-										<p className="text-sm text-spotify-text-muted truncate">{song.artist}</p>
+										<p className="truncate text-xs text-spotify-text-muted sm:text-sm">
+											{song.artist}
+										</p>
 									</div>
 
-									<span className="text-sm text-spotify-text-muted">
+									<span className="shrink-0 text-xs text-spotify-text-muted sm:text-sm">
 										{formatDuration(song.duration)}
 									</span>
 								</div>
 							);
 						})}
 					</div>
-				</ScrollArea>
-			</div>
+				</div>
+			</ScrollArea>
 		</main>
 	);
 };

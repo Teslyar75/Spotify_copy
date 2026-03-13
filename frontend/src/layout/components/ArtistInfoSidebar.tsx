@@ -4,16 +4,25 @@ import { Button } from "@/components/ui/button";
 import { X, Calendar, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Заглушка: mock-расписание концертов по имени артиста
+// Mock-расписание концертов с будущими датами
 function getMockConcerts(artistName: string) {
 	const seed = artistName.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
 	const venues = ["Red Rocks", "The Fillmore", "House of Blues", "Roxy Theatre", "Blue Note"];
 	const cities = ["Denver", "San Francisco", "Chicago", "New York", "Los Angeles"];
-	return [
-		{ date: "2025-04-15", venue: venues[seed % 5], city: cities[seed % 5] },
-		{ date: "2025-05-22", venue: venues[(seed + 1) % 5], city: cities[(seed + 1) % 5] },
-		{ date: "2025-06-10", venue: venues[(seed + 2) % 5], city: cities[(seed + 2) % 5] },
-	];
+
+	const baseDate = new Date();
+	baseDate.setMonth(baseDate.getMonth() + 1);
+
+	return [0, 1, 2].map((offset) => {
+		const date = new Date(baseDate);
+		date.setDate(date.getDate() + offset * 28 + (seed % 7));
+
+		return {
+			date: date.toISOString(),
+			venue: venues[(seed + offset) % venues.length],
+			city: cities[(seed + offset) % cities.length],
+		};
+	});
 }
 
 const ArtistInfoSidebar = () => {
@@ -24,24 +33,27 @@ const ArtistInfoSidebar = () => {
 
 	return (
 		<>
-			{/* Overlay на мобильных */}
+			{/* Overlay for mobile/tablet */}
 			{isSidebarOpen && (
 				<div
-					className="fixed inset-0 bg-black/50 z-40 md:hidden"
+					className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px] lg:hidden"
 					onClick={closeSidebar}
 					aria-hidden="true"
 				/>
 			)}
 
-			{/* Панель — слайдер справа */}
-			<div
+			{/* Sidebar */}
+			<aside
 				className={cn(
-					"fixed top-0 right-0 h-full w-full max-w-[380px] bg-spotify-charcoal border-l border-white/10 z-50 flex flex-col transition-transform duration-300 ease-out",
+					"fixed top-0 right-0 z-50 flex h-full w-full max-w-full flex-col border-l border-white/10 bg-spotify-charcoal shadow-2xl transition-transform duration-300 ease-out sm:max-w-[380px] md:max-w-[420px]",
 					isSidebarOpen ? "translate-x-0" : "translate-x-full"
 				)}
 			>
-				<div className="p-4 flex items-center justify-between border-b border-white/10">
-					<h2 className="font-semibold text-base text-white">Об исполнителе</h2>
+				<div className="flex items-center justify-between border-b border-white/10 px-4 py-4 sm:px-5">
+					<h2 className="text-base font-semibold text-white sm:text-lg">
+						Об исполнителе
+					</h2>
+
 					<Button
 						variant="ghost"
 						size="icon"
@@ -53,69 +65,83 @@ const ArtistInfoSidebar = () => {
 				</div>
 
 				<ScrollArea className="flex-1 scrollbar-spotify">
-					<div className="p-4 space-y-6">
+					<div className="space-y-5 p-4 sm:space-y-6 sm:p-5">
 						{artist ? (
 							<>
 								<div className="flex flex-col items-center gap-4">
 									<img
-										src={artist.imageUrl || `https://picsum.photos/seed/${encodeURIComponent(artist.name)}/300/300`}
+										src={
+											artist.imageUrl ||
+											`https://picsum.photos/seed/${encodeURIComponent(artist.name)}/400/400`
+										}
 										alt={artist.name}
-										className="h-40 w-40 rounded-full object-cover shadow-lg"
+										className="h-28 w-28 rounded-full object-cover shadow-lg sm:h-36 sm:w-36 md:h-40 md:w-40"
 									/>
-									<h3 className="text-xl font-bold text-white text-center">{artist.name}</h3>
+
+									<h3 className="text-center text-xl font-bold text-white sm:text-2xl">
+										{artist.name}
+									</h3>
 								</div>
 
-								{artist.bio && (
+								{artist.bio ? (
 									<div>
-										<h4 className="text-sm font-medium text-spotify-text-muted mb-2">О себе</h4>
-										<p className="text-sm text-white leading-relaxed">{artist.bio}</p>
+										<h4 className="mb-2 text-sm font-medium text-spotify-text-muted">
+											О себе
+										</h4>
+										<p className="text-sm leading-relaxed text-white sm:text-[15px]">
+											{artist.bio}
+										</p>
 									</div>
-								)}
-
-								{!artist.bio && (
-									<p className="text-sm text-spotify-text-muted italic">
+								) : (
+									<p className="text-sm italic text-spotify-text-muted">
 										Информация об исполнителе скоро появится.
 									</p>
 								)}
 
-								{/* Расписание концертов */}
 								<div>
-									<h4 className="text-sm font-medium text-spotify-text-muted mb-3 flex items-center gap-2">
+									<h4 className="mb-3 flex items-center gap-2 text-sm font-medium text-spotify-text-muted">
 										<Calendar className="h-4 w-4" />
 										Ближайшие концерты
 									</h4>
+
 									{concerts.length > 0 ? (
 										<div className="space-y-3">
-											{concerts.map((c, i) => (
+											{concerts.map((concert, i) => (
 												<div
 													key={i}
-													className="p-3 rounded-lg bg-white/5 border border-white/10"
+													className="rounded-lg border border-white/10 bg-white/5 p-3 sm:p-4"
 												>
-													<p className="text-white font-medium">{c.venue}</p>
-													<p className="text-sm text-spotify-text-muted flex items-center gap-1 mt-1">
-														<MapPin className="h-3 w-3" />
-														{c.city} · {new Date(c.date).toLocaleDateString("ru-RU")}
+													<p className="font-medium text-white">
+														{concert.venue}
+													</p>
+
+													<p className="mt-1 flex items-center gap-1 text-sm text-spotify-text-muted">
+														<MapPin className="h-3.5 w-3.5 shrink-0" />
+														<span className="truncate">
+															{concert.city} ·{" "}
+															{new Date(concert.date).toLocaleDateString("ru-RU")}
+														</span>
 													</p>
 												</div>
 											))}
 										</div>
 									) : (
-										<p className="text-sm text-spotify-text-muted italic">
+										<p className="text-sm italic text-spotify-text-muted">
 											Расписание концертов пока не добавлено.
 										</p>
 									)}
 								</div>
 							</>
 						) : (
-							<div className="text-center py-12">
-								<p className="text-spotify-text-muted text-sm">
+							<div className="py-12 text-center">
+								<p className="text-sm text-spotify-text-muted">
 									Нажмите на имя исполнителя, чтобы увидеть информацию
 								</p>
 							</div>
 						)}
 					</div>
 				</ScrollArea>
-			</div>
+			</aside>
 		</>
 	);
 };

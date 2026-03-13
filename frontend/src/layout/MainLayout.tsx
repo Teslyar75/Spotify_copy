@@ -3,24 +3,15 @@ import LeftSidebar from "./components/LeftSidebar";
 import ArtistInfoSidebar from "./components/ArtistInfoSidebar";
 import AudioPlayer from "./components/AudioPlayer";
 import { PlaybackControls } from "./components/PlaybackControls";
-import { useEffect, useState } from "react";
 import { useArtistStore } from "@/stores/useArtistStore";
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
 
 const MainLayout = () => {
-	const [isMobile, setIsMobile] = useState(false);
 	const location = useLocation();
 	const { openArtist, toggleSidebar, isSidebarOpen } = useArtistStore();
 	const { currentSong } = usePlayerStore();
-
-	useEffect(() => {
-		const checkMobile = () => setIsMobile(window.innerWidth < 768);
-		checkMobile();
-		window.addEventListener("resize", checkMobile);
-		return () => window.removeEventListener("resize", checkMobile);
-	}, []);
 
 	const handleOpenArtist = () => {
 		if (currentSong) {
@@ -36,42 +27,58 @@ const MainLayout = () => {
 	return (
 		<div className="h-screen bg-spotify-black text-white flex flex-col overflow-hidden">
 			<AudioPlayer />
-			<div className="flex-1 flex min-h-0">
-				{/* Left sidebar - Spotify style */}
-				<div
-					className={`${
-						isMobile ? "w-0 overflow-hidden" : "w-[280px] min-w-[280px]"
-					} flex flex-col bg-spotify-sidebar transition-all duration-300`}
-				>
+
+			<div className="flex flex-1 min-h-0 overflow-hidden">
+				{/* Left sidebar */}
+				<aside className="hidden md:flex md:w-[88px] md:min-w-[88px] lg:w-[280px] lg:min-w-[280px] shrink-0 border-r border-white/10 bg-spotify-sidebar">
 					<LeftSidebar />
-				</div>
+				</aside>
 
 				{/* Main content */}
-				<div
+				<main
 					key={location.pathname}
 					className="flex-1 min-w-0 flex flex-col overflow-hidden page-transition-enter"
 				>
 					<Outlet />
-				</div>
+				</main>
 
-				{/* Right sidebar — кнопка «Об исполнителе» */}
-				{!isMobile && (
-					<div className="w-[80px] min-w-[80px] flex flex-col items-center justify-start pt-6 border-l border-white/10">
+				{/* Right artist rail */}
+				<aside className="hidden lg:flex w-[84px] min-w-[84px] shrink-0 border-l border-white/10 bg-black/30">
+					<div className="w-full flex flex-col items-center pt-5 px-2">
 						<Button
 							variant="ghost"
-							size="sm"
+							size="icon"
 							onClick={handleOpenArtist}
-							className={`rounded-full font-medium transition-all flex flex-col gap-1 ${
+							className={`h-12 w-12 rounded-2xl transition-all ${
 								isSidebarOpen
 									? "bg-spotify-green text-black hover:bg-spotify-green-hover"
 									: "bg-white/10 text-white hover:bg-white/20"
 							}`}
 						>
 							<User className="h-5 w-5" />
-							<span className="text-[10px]">Исполнитель</span>
 						</Button>
+
+						<span className="mt-2 text-[11px] leading-tight text-center text-spotify-text-muted">
+							Исполнитель
+						</span>
 					</div>
-				)}
+				</aside>
+			</div>
+
+			{/* Mobile / tablet floating artist button */}
+			<div className="hidden md:flex lg:hidden fixed right-2 bottom-24 z-30">
+				<Button
+					variant="ghost"
+					size="icon"
+					onClick={handleOpenArtist}
+					className={`h-9 w-9 rounded-full shadow-lg transition-all ${
+						isSidebarOpen
+							? "bg-spotify-green text-black hover:bg-spotify-green-hover"
+							: "bg-white/10 text-white hover:bg-white/20 backdrop-blur-md"
+					}`}
+				>
+					<User className="h-4 w-4" />
+				</Button>
 			</div>
 
 			<PlaybackControls />

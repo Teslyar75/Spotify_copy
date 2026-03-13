@@ -28,6 +28,7 @@ const SearchPage = () => {
 			setResults({ tracks: [], albums: [], artists: [] });
 			return;
 		}
+
 		const data = await search(query.trim());
 		setResults(data);
 		setSearchParams({ q: query.trim() });
@@ -56,19 +57,23 @@ const SearchPage = () => {
 	};
 
 	return (
-		<main className="flex-1 flex flex-col min-h-0 bg-spotify-charcoal">
-			<div className="h-[340px] min-h-[340px] bg-gradient-to-b from-indigo-900/60 via-spotify-charcoal to-spotify-charcoal relative">
+		<main className="flex flex-1 flex-col min-h-0 overflow-hidden bg-spotify-charcoal">
+			<div className="relative h-[220px] min-h-[220px] bg-gradient-to-b from-indigo-900/60 via-spotify-charcoal to-spotify-charcoal sm:h-[260px] sm:min-h-[260px] md:h-[300px] md:min-h-[300px] lg:h-[340px] lg:min-h-[340px]">
 				<Topbar />
-				<div className="absolute bottom-0 left-0 right-0 p-6">
-					<h1 className="text-4xl font-bold text-white mb-6">Search</h1>
+
+				<div className="absolute bottom-0 left-0 right-0 px-4 pb-5 sm:px-5 md:px-6 md:pb-6">
+					<h1 className="mb-4 text-2xl font-bold text-white sm:text-3xl md:mb-5 md:text-4xl">
+						Search
+					</h1>
+
 					<form onSubmit={handleSubmit} className="relative max-w-xl">
-						<Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-spotify-text-muted" />
+						<Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-spotify-text-muted sm:h-5 sm:w-5" />
 						<Input
 							type="text"
 							placeholder="What do you want to listen to?"
 							value={query}
 							onChange={(e) => setQuery(e.target.value)}
-							className="pl-12 h-14 rounded-full bg-white/10 border-0 text-white text-lg placeholder:text-spotify-text-muted focus-visible:ring-2 focus-visible:ring-white/30"
+							className="h-11 rounded-full border-0 bg-white/10 pl-11 text-sm text-white placeholder:text-spotify-text-muted focus-visible:ring-2 focus-visible:ring-white/30 sm:h-12 sm:pl-12 sm:text-base md:h-14 md:text-lg"
 							autoFocus
 						/>
 					</form>
@@ -76,16 +81,16 @@ const SearchPage = () => {
 			</div>
 
 			<ScrollArea className="flex-1 scrollbar-spotify">
-				<div className="p-6 space-y-10">
+				<div className="relative z-10 -mt-6 px-4 pb-28 pt-0 sm:-mt-7 sm:px-5 md:-mt-8 md:px-6 md:pb-32">
 					{isLoading ? (
-						<p className="text-spotify-text-muted">Searching...</p>
+						<p className="text-sm text-spotify-text-muted">Searching...</p>
 					) : !query.trim() ? (
-						<div className="flex flex-wrap gap-4">
+						<div className="flex flex-wrap gap-2 sm:gap-3">
 							{["Rock", "Pop", "Jazz", "Classical", "Electronic"].map((genre) => (
 								<Button
 									key={genre}
 									variant="ghost"
-									className="rounded-full bg-white/10 hover:bg-white/20 text-white px-6"
+									className="rounded-full bg-white/10 px-4 text-sm text-white hover:bg-white/20 sm:px-5"
 									onClick={async () => {
 										setQuery(genre);
 										const data = await search(genre);
@@ -97,36 +102,47 @@ const SearchPage = () => {
 							))}
 						</div>
 					) : (
-						<>
+						<div className="space-y-8 md:space-y-10">
 							{results.tracks.length > 0 && (
 								<section>
-									<h2 className="text-2xl font-bold text-white mb-4">Songs</h2>
+									<h2 className="mb-3 text-lg font-bold text-white sm:mb-4 sm:text-2xl">
+										Songs
+									</h2>
+
 									<div className="space-y-2">
 										{results.tracks.map((song, i) => (
 											<div
 												key={song.id}
-												className="group flex items-center gap-4 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-colors"
+												className="group flex cursor-pointer items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-white/10 sm:gap-4 sm:p-3"
 												onClick={() => handlePlayTrack(song)}
 											>
-												<span className="w-6 text-spotify-text-muted text-sm">
+												<span className="w-5 text-xs text-spotify-text-muted sm:w-6 sm:text-sm">
 													{i + 1}
 												</span>
+
 												<img
 													src={song.image_url || "/album-placeholder.png"}
 													alt=""
-													className="h-12 w-12 rounded object-cover"
+													className="h-10 w-10 rounded object-cover sm:h-12 sm:w-12"
 												/>
-												<div className="flex-1 min-w-0">
-													<p className="font-medium text-white truncate">{song.title}</p>
-													<p className="text-sm text-spotify-text-muted truncate">
+
+												<div className="min-w-0 flex-1">
+													<p className="truncate text-sm font-medium text-white sm:text-base">
+														{song.title}
+													</p>
+													<p className="truncate text-xs text-spotify-text-muted sm:text-sm">
 														{song.artist}
 													</p>
 												</div>
+
 												<Button
 													size="icon"
-													className="opacity-0 group-hover:opacity-100 rounded-full bg-spotify-green hover:bg-spotify-green-hover h-10 w-10"
+													className="h-9 w-9 rounded-full bg-spotify-green opacity-0 transition-opacity group-hover:opacity-100 hover:bg-spotify-green-hover sm:h-10 sm:w-10"
 												>
-													<Play className="h-5 w-5 text-black ml-0.5" fill="currentColor" />
+													<Play
+														className="ml-0.5 h-4 w-4 text-black sm:h-5 sm:w-5"
+														fill="currentColor"
+													/>
 												</Button>
 											</div>
 										))}
@@ -136,33 +152,43 @@ const SearchPage = () => {
 
 							{results.albums.length > 0 && (
 								<section>
-									<h2 className="text-2xl font-bold text-white mb-4">Albums</h2>
-									<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+									<h2 className="mb-3 text-lg font-bold text-white sm:mb-4 sm:text-2xl">
+										Albums
+									</h2>
+
+									<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
 										{results.albums.map((album) => (
 											<Link
 												key={album.id}
 												to={`/albums/${album.id}`}
-												className="group p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors block"
+												className="group block rounded-lg bg-white/5 p-3 transition-colors hover:bg-white/10 sm:p-4"
 											>
 												<div className="relative mb-3">
 													<img
 														src={album.image_url || "/album-placeholder.png"}
 														alt={album.title}
-														className="aspect-square object-cover rounded-lg w-full"
+														className="aspect-square w-full rounded-lg object-cover"
 													/>
+
 													<Button
 														size="icon"
 														onClick={(e) => {
 															e.preventDefault();
 															handlePlayAlbum(album);
 														}}
-														className="absolute bottom-2 right-2 h-12 w-12 rounded-full bg-spotify-green hover:bg-spotify-green-hover opacity-0 group-hover:opacity-100 shadow-xl"
+														className="absolute bottom-2 right-2 h-10 w-10 rounded-full bg-spotify-green opacity-0 shadow-xl transition-all hover:bg-spotify-green-hover group-hover:opacity-100 md:h-12 md:w-12"
 													>
-														<Play className="h-5 w-5 text-black ml-0.5" fill="currentColor" />
+														<Play
+															className="ml-0.5 h-4 w-4 text-black md:h-5 md:w-5"
+															fill="currentColor"
+														/>
 													</Button>
 												</div>
-												<p className="font-medium text-white truncate">{album.title}</p>
-												<p className="text-sm text-spotify-text-muted truncate">
+
+												<p className="truncate text-sm font-medium text-white sm:text-base">
+													{album.title}
+												</p>
+												<p className="truncate text-xs text-spotify-text-muted sm:text-sm">
 													{album.artist}
 												</p>
 											</Link>
@@ -173,18 +199,26 @@ const SearchPage = () => {
 
 							{results.artists.length > 0 && (
 								<section>
-									<h2 className="text-2xl font-bold text-white mb-4">Artists</h2>
-									<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+									<h2 className="mb-3 text-lg font-bold text-white sm:mb-4 sm:text-2xl">
+										Artists
+									</h2>
+
+									<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
 										{results.artists.map((artist) => (
 											<div
 												key={artist.name}
-												className="group p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-center"
+												className="group rounded-lg bg-white/5 p-3 text-center transition-colors hover:bg-white/10 sm:p-4"
 											>
-												<div className="h-32 w-32 mx-auto mb-3 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-													<User className="h-16 w-16 text-white/80" />
+												<div className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 sm:h-28 sm:w-28 md:h-32 md:w-32">
+													<User className="h-12 w-12 text-white/80 sm:h-14 sm:w-14 md:h-16 md:w-16" />
 												</div>
-												<p className="font-medium text-white truncate">{artist.name}</p>
-												<p className="text-sm text-spotify-text-muted">Artist</p>
+
+												<p className="truncate text-sm font-medium text-white sm:text-base">
+													{artist.name}
+												</p>
+												<p className="text-xs text-spotify-text-muted sm:text-sm">
+													Artist
+												</p>
 											</div>
 										))}
 									</div>
@@ -195,9 +229,11 @@ const SearchPage = () => {
 								results.tracks.length === 0 &&
 								results.albums.length === 0 &&
 								results.artists.length === 0 && (
-									<p className="text-spotify-text-muted">No results found for "{query}"</p>
+									<p className="text-sm text-spotify-text-muted">
+										No results found for "{query}"
+									</p>
 								)}
-						</>
+						</div>
 					)}
 				</div>
 			</ScrollArea>
