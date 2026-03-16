@@ -2,7 +2,7 @@ import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useEffect, useRef } from "react";
 
 const AudioPlayer = () => {
-	const { currentSong, isPlaying, playNext, volume, isMuted } = usePlayerStore();
+	const { currentSong, isPlaying, playNext, volume, isMuted, repeatMode } = usePlayerStore();
 	const audioRef = useRef<HTMLAudioElement>(null);
 
 	useEffect(() => {
@@ -23,7 +23,12 @@ const AudioPlayer = () => {
 	}, [volume, isMuted]);
 
 	const handleEnded = () => {
-		playNext();
+		if (repeatMode === "one" && audioRef.current) {
+			audioRef.current.currentTime = 0;
+			audioRef.current.play().catch((err) => console.error("Repeat playback error:", err));
+		} else {
+			playNext();
+		}
 	};
 
 	const handleError = (e: React.SyntheticEvent<HTMLAudioElement>) => {
