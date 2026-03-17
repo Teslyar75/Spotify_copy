@@ -40,3 +40,20 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Media uploads (generated at runtime)
+media/images/*
+media/songs/*
+
+# Database dumps & archives
+*.sql
+*.rar
+*.dump
+*.bak
+
+# Test artifacts
+test_img.*
+test_*.*
+
+# Misc
+"tash list"
