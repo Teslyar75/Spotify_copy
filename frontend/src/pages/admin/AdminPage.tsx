@@ -11,7 +11,8 @@ import {
 	DialogTitle,
 	DialogFooter,
 } from "@/components/ui/dialog";
-import { Music, Disc, Upload, Pencil, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Music, Disc, Upload, Pencil, Trash2, ChevronDown, ChevronUp, Radio } from "lucide-react";
+import { JamendoImportModal } from "@/components/ui/JamendoImportModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Album, Song } from "@/types";
 import toast from "react-hot-toast";
@@ -102,6 +103,7 @@ const AdminPage = () => {
 
 	const [isSongDialogOpen, setIsSongDialogOpen] = useState(false);
 	const [isAlbumDialogOpen, setIsAlbumDialogOpen] = useState(false);
+	const [isJamendoOpen, setIsJamendoOpen] = useState(false);
 	const [isEditAlbumDialogOpen, setIsEditAlbumDialogOpen] = useState(false);
 	const [isEditSongDialogOpen, setIsEditSongDialogOpen] = useState(false);
 	const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
@@ -441,23 +443,30 @@ const AdminPage = () => {
 
 			<ScrollArea className="flex-1 min-h-0">
 				<div className="p-6 space-y-8">
-					{/* Action buttons */}
-					<div className="flex gap-3 flex-wrap">
-						<Button
-							className="bg-green-600 hover:bg-green-700"
-							onClick={() => { clearError(); setIsSongDialogOpen(true); }}
-						>
-							<Music className="mr-2 h-4 w-4" />
-							Добавить трек
-						</Button>
-						<Button
-							className="bg-blue-600 hover:bg-blue-700"
-							onClick={() => { clearError(); setIsAlbumDialogOpen(true); }}
-						>
-							<Disc className="mr-2 h-4 w-4" />
-							Добавить альбом
-						</Button>
-					</div>
+				{/* Action buttons */}
+				<div className="flex gap-3 flex-wrap">
+					<Button
+						className="bg-green-600 hover:bg-green-700"
+						onClick={() => { clearError(); setIsSongDialogOpen(true); }}
+					>
+						<Music className="mr-2 h-4 w-4" />
+						Добавить трек
+					</Button>
+					<Button
+						className="bg-blue-600 hover:bg-blue-700"
+						onClick={() => { clearError(); setIsAlbumDialogOpen(true); }}
+					>
+						<Disc className="mr-2 h-4 w-4" />
+						Добавить альбом
+					</Button>
+					<Button
+						className="bg-purple-600 hover:bg-purple-700"
+						onClick={() => { clearError(); setIsJamendoOpen(true); }}
+					>
+						<Radio className="mr-2 h-4 w-4" />
+						Импорт из Jamendo
+					</Button>
+				</div>
 
 				{/* All Songs list */}
 				<div>
@@ -852,6 +861,12 @@ const AdminPage = () => {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+		{/* Jamendo Import Modal */}
+		<JamendoImportModal
+			isOpen={isJamendoOpen}
+			onClose={() => setIsJamendoOpen(false)}
+			onImported={() => refreshAll()}
+		/>
 		</div>
 	);
 };
