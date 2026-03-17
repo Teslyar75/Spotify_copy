@@ -9,6 +9,7 @@ GET  /api/jamendo/search  — поиск треков на Jamendo
 POST /api/jamendo/import  — сохранить трек из Jamendo в локальную БД
 """
 
+import re
 import uuid as uuid_module
 from pathlib import Path
 from uuid import UUID
@@ -62,6 +63,26 @@ class JamendoImportRequest(BaseModel):
 # Эндпоинты
 # ──────────────────────────────────────────────
 
+def _extract_jamendo_id(url: str) -> str | None:
+    """Извлечь стабильный trackid из Jamendo audio URL.
+
+    URL вида: https://prod-1.storage.jamendo.com/?trackid=1593988&format=mp31&from=...
+    Токены (from=...) меняются при каждом запросе, но trackid — стабильный.
+    """
+    m = re.search(r"trackid=(\d+)", url or "")
+    return m.group(1) if m else None
+
+
+def _get_imported_jamendo_ids(db: Session) -> set[str]:
+    """Вернуть set Jamendo trackid всех уже импортированных треков из БД."""
+    rows = (
+        db.query(Track.file_url)
+        .filter(Track.file_url.like("%prod-1.storage.jamendo.com%"))
+        .all()
+    )
+    return {_extract_jamendo_id(row[0]) for row in rows} - {None}
+
+
 def _fetch_jamendo_tracks(params: dict) -> list[JamendoTrack]:
     """Вспомогательная функция: делает запрос к Jamendo API и парсит результаты."""
     try:
@@ -104,24 +125,27 @@ def search_jamendo(
     tags: str = Query("", description="Теги жанров через пробел: rock pop electronic"),
     limit: int = Query(20, ge=1, le=50),
     offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
 ):
     """
     Поиск треков на Jamendo.
 
-    Стратегия поиска по запросу q:
-    1. Сначала ищем по имени артиста (artist_name) — точный поиск
-    2. Если нашли — отлично. Если нет — ищем по свободному тексту (search),
-       который охватывает название трека, альбома, теги.
+    Автоматически исключает треки, которые уже импортированы в библиотеку.
+    Сравнение идёт по trackid (стабильная часть URL), а не по всему URL
+    (токены в from=... меняются при каждом запросе).
 
-    Параметры:
-    - q: имя артиста ИЛИ название трека
-    - tags: теги жанров (rock, pop, electronic, jazz, classical и т.д.)
-    - limit: количество результатов (1–50)
+    Стратегия поиска:
+    1. По имени артиста (artist_name) — точный поиск
+    2. Фолбэк: свободный текст (название трека, альбом, теги)
     """
+    # Увеличиваем limit для Jamendo, чтобы после фильтрации уже импортированных
+    # осталось достаточно треков для показа
+    fetch_limit = min(limit * 3, 50)
+
     base_params = {
         "client_id": JAMENDO_CLIENT_ID,
         "format": "json",
-        "limit": limit,
+        "limit": fetch_limit,
         "offset": offset,
         "audioformat": "mp31",
         "imagesize": 300,
@@ -132,23 +156,20 @@ def search_jamendo(
     if tags:
         base_params["fuzzytags"] = tags.strip()
 
-    # Если запрос не задан — возвращаем популярные треки
-    if not q and not tags:
-        return _fetch_jamendo_tracks(base_params)
+    if q:
+        # Шаг 1: поиск по имени артиста
+        tracks = _fetch_jamendo_tracks({**base_params, "artist_name": q.strip()})
+        if not tracks:
+            # Шаг 2: фолбэк — свободный текстовый поиск
+            tracks = _fetch_jamendo_tracks({**base_params, "search": q.strip()})
+    else:
+        tracks = _fetch_jamendo_tracks(base_params)
 
-    if not q:
-        return _fetch_jamendo_tracks(base_params)
+    # Исключаем уже импортированные треки
+    imported_ids = _get_imported_jamendo_ids(db)
+    filtered = [t for t in tracks if t.jamendo_id not in imported_ids]
 
-    # Шаг 1: поиск по имени артиста
-    artist_params = {**base_params, "artist_name": q.strip()}
-    tracks = _fetch_jamendo_tracks(artist_params)
-
-    if tracks:
-        return tracks
-
-    # Шаг 2: фолбэк — свободный текстовый поиск (трек, альбом, теги)
-    text_params = {**base_params, "search": q.strip()}
-    return _fetch_jamendo_tracks(text_params)
+    return filtered[:limit]
 
 
 def _download_image(url: str) -> str | None:
@@ -183,13 +204,20 @@ def import_jamendo_track(
 
     Если трек с таким Jamendo ID уже импортирован — возвращается существующий.
     """
-    # Jamendo ID сохраняем в виде тега в начале title, чтобы избежать дублей.
-    # Ищем существующий трек по совпадению file_url (содержит Jamendo track id).
-    existing = (
-        db.query(Track)
-        .filter(Track.file_url == body.audio_url)
-        .first()
-    )
+    # Проверка дубля по trackid (стабильная часть URL, токены меняются).
+    jamendo_id = _extract_jamendo_id(body.audio_url)
+    if jamendo_id:
+        existing = (
+            db.query(Track)
+            .filter(Track.file_url.like(f"%trackid={jamendo_id}%"))
+            .first()
+        )
+    else:
+        existing = (
+            db.query(Track)
+            .filter(Track.file_url == body.audio_url)
+            .first()
+        )
     if existing:
         return {
             "id": str(existing.id),

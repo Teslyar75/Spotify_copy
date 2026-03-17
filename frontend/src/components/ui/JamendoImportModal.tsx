@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
 import { Search, Download, Music, Loader2, CheckCircle2, Play, Pause, Square } from "lucide-react";
@@ -181,7 +180,7 @@ export const JamendoImportModal = ({ isOpen, onClose, onImported }: Props) => {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleClose}>
-			<DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-2xl w-full max-h-[85vh] flex flex-col">
+			<DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-2xl w-full flex flex-col" style={{ maxHeight: "90vh" }}>
 				<DialogHeader>
 					<DialogTitle className="text-xl flex items-center gap-2">
 						<Music className="h-5 w-5 text-green-400" />
@@ -247,8 +246,8 @@ export const JamendoImportModal = ({ isOpen, onClose, onImported }: Props) => {
 					</div>
 				</div>
 
-				{/* Results */}
-				<ScrollArea className="flex-1 min-h-0 mt-2">
+			{/* Results */}
+			<div className="mt-2 overflow-y-auto" style={{ height: "420px", minHeight: "200px" }}>
 					{loading && (
 						<div className="flex items-center justify-center py-12">
 							<Loader2 className="h-8 w-8 animate-spin text-green-500" />
@@ -398,7 +397,7 @@ export const JamendoImportModal = ({ isOpen, onClose, onImported }: Props) => {
 							</p>
 						</div>
 					)}
-				</ScrollArea>
+				</div>
 
 				{/* Now playing bar */}
 				{playingId && (() => {
