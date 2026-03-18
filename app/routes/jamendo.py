@@ -53,6 +53,7 @@ class JamendoImportRequest(BaseModel):
     title: str
     artist: str
     album_name: str = ""
+    genre: str = ""
     duration: int
     audio_url: str
     image_url: str
@@ -232,6 +233,7 @@ def import_jamendo_track(
         title=body.title,
         artist=body.artist,
         album_name=body.album_name or body.title,
+        genre=body.genre.strip() or None,
         duration=body.duration,
         file_url=body.audio_url,
         image_url=local_image_url or body.image_url or None,

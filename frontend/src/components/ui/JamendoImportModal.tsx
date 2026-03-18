@@ -151,6 +151,7 @@ export const JamendoImportModal = ({ isOpen, onClose, onImported }: Props) => {
 				title: track.title,
 				artist: track.artist,
 				album_name: track.album_name,
+				genre: tags,
 				duration: track.duration,
 				audio_url: track.audio_url,
 				image_url: track.image_url,

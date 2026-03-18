@@ -43,6 +43,7 @@ class Track(Base):
     )
 
     image_url = Column(String(500), nullable=True)   # обложка трека (может наследоваться от альбома)
+    genre     = Column(String(100), nullable=True, index=True)  # жанр (rock, pop, jazz...) — для фильтра в поиске
     duration  = Column(Integer, nullable=False)       # длительность в секундах
     file_url  = Column(String(500), nullable=False)   # URL аудиофайла (/media/songs/... или SoundHelix)
 

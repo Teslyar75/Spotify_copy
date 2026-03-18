@@ -64,6 +64,7 @@ interface MusicStore {
 	fetchTrendingSongs: () => Promise<void>;
 	fetchAlbums: () => Promise<void>;
 	fetchAllSongs: () => Promise<void>;
+	fetchTracksByGenre: () => Promise<Record<string, Song[]>>;
 	fetchAlbumById: (id: string) => Promise<Album | null>;
 	search: (query: string) => Promise<{ tracks: Song[]; albums: Album[]; artists: { name: string }[] }>;
 
@@ -138,10 +139,24 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
 	fetchAllSongs: async () => {
 		set({ isLoading: true, error: null });
 		try {
-			const res = await axiosInstance.get("/songs/?limit=100");
+			const res = await axiosInstance.get("/songs/?limit=500");
 			set({ allSongs: res.data, isLoading: false });
 		} catch (e) {
 			set({ error: extractError(e), isLoading: false });
+		}
+	},
+
+	fetchTracksByGenre: async () => {
+		set({ isLoading: true, error: null });
+		try {
+			const res = await axiosInstance.get("/songs/browse-by-genre", {
+				params: { limit_per_genre: 20 },
+			});
+			set({ isLoading: false });
+			return res.data as Record<string, Song[]>;
+		} catch (e) {
+			set({ error: extractError(e), isLoading: false });
+			return {};
 		}
 	},
 

@@ -104,6 +104,7 @@ class TrackBase(BaseModel):
     duration: int         # длительность в секундах
     file_url: str         # URL аудиофайла
     image_url: str | None = None   # обложка трека (может наследоваться от альбома)
+    genre: str | None = None       # жанр (rock, pop, jazz...) — для фильтра в поиске
     album_id: UUID | None = None   # None = трек-сингл, не принадлежит альбому
 
 
@@ -119,6 +120,7 @@ class TrackUpdate(BaseModel):
     duration: int | None = None
     file_url: str | None = None
     image_url: str | None = None
+    genre: str | None = None
     album_id: UUID | None = None
 
 

@@ -14,8 +14,8 @@ from app.schemas import TrackCreate, TrackResponse, TrackUpdate
 
 router = APIRouter()
 
-DEFAULT_LIMIT = 50
-MAX_LIMIT = 100
+DEFAULT_LIMIT = 100
+MAX_LIMIT = 500
 
 
 @router.get("/health")
@@ -28,26 +28,21 @@ def track_health():
 def get_all_songs(
     limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
     offset: int = Query(0, ge=0),
+    genre: str | None = Query(None, description="Фильтр по жанру (rock, pop, jazz...)"),
     db: Session = Depends(get_db),
 ):
     """
-    Список всех треков с пагинацией.
+    Список треков с пагинацией и опциональной фильтрацией по жанру.
 
-    limit — сколько треков вернуть (1..100, по умолчанию 50)
-    offset — сколько пропустить (для перехода на следующую страницу)
-
-    Используется .slice() вместо .limit().offset() — более безопасный вариант
-    для PostgreSQL, корректно работающий на граничных значениях.
-    Сортировка по created_at DESC — новые треки первыми.
+    genre — если задан, возвращаются только треки, у которых genre содержит
+    эту строку (регистронезависимо). Используется для фильтра по категориям в поиске.
     """
     start = offset
     stop = offset + min(limit, MAX_LIMIT)
-    tracks = (
-        db.query(Track)
-        .order_by(Track.created_at.desc())
-        .slice(start, stop)
-        .all()
-    )
+    q = db.query(Track).order_by(Track.created_at.desc())
+    if genre and genre.strip():
+        q = q.filter(Track.genre.ilike(f"%{genre.strip()}%"))
+    tracks = q.slice(start, stop).all()
     return tracks
 
 
@@ -56,11 +51,11 @@ def get_featured_songs(db: Session = Depends(get_db)):
     """
     Featured треки для главной страницы.
 
-    Берём последние 50 добавленных треков и возвращаем 6 случайных.
+    Берём последние 100 добавленных треков и возвращаем 12 случайных.
     Это гарантирует, что недавно импортированные треки тоже попадают на главную.
     """
-    tracks = db.query(Track).order_by(Track.created_at.desc()).limit(50).all()
-    return random.sample(tracks, min(len(tracks), 6)) if tracks else []
+    tracks = db.query(Track).order_by(Track.created_at.desc()).limit(100).all()
+    return random.sample(tracks, min(len(tracks), 12)) if tracks else []
 
 
 @router.get("/made-for-you", response_model=list[TrackResponse])
@@ -70,8 +65,42 @@ def get_made_for_you_songs(db: Session = Depends(get_db)):
 
     Случайная выборка из всей библиотеки (используем func.random() для честного рандома).
     """
-    tracks = db.query(Track).order_by(Track.created_at.desc()).limit(50).all()
-    return random.sample(tracks, min(len(tracks), 5)) if tracks else []
+    tracks = db.query(Track).order_by(Track.created_at.desc()).limit(100).all()
+    return random.sample(tracks, min(len(tracks), 12)) if tracks else []
+
+
+@router.get("/browse-by-genre")
+def get_tracks_by_genre(
+    limit_per_genre: int = Query(20, ge=1, le=50),
+    db: Session = Depends(get_db),
+):
+    """
+    Треки, сгруппированные по жанрам для главной и поиска.
+
+    Возвращает словарь { genre: [tracks] } — только жанры, в которых есть треки.
+    Треки без жанра попадают в категорию "Other".
+    """
+    from collections import defaultdict
+
+    GENRE_DISPLAY: dict[str, str] = {
+        "rock": "Rock", "pop": "Pop", "jazz": "Jazz", "classical": "Classical",
+        "electronic": "Electronic", "hiphop": "Hip-Hop", "rnb": "R&B",
+        "ambient": "Ambient", "other": "Other",
+    }
+
+    tracks = (
+        db.query(Track)
+        .order_by(Track.created_at.desc())
+        .limit(500)
+        .all()
+    )
+    by_genre: dict[str, list] = defaultdict(list)
+    for t in tracks:
+        raw = (t.genre or "").strip().lower() or "other"
+        genre_display = GENRE_DISPLAY.get(raw, raw.capitalize())
+        if len(by_genre[genre_display]) < limit_per_genre:
+            by_genre[genre_display].append(TrackResponse.model_validate(t))
+    return dict(by_genre)
 
 
 @router.get("/trending", response_model=list[TrackResponse])
@@ -82,8 +111,8 @@ def get_trending_songs(db: Session = Depends(get_db)):
     MVP: последние добавленные треки, случайная выборка.
     В продакшн: сортировка по количеству прослушиваний за 7 дней.
     """
-    tracks = db.query(Track).order_by(Track.created_at.desc()).limit(50).all()
-    return random.sample(tracks, min(len(tracks), 5)) if tracks else []
+    tracks = db.query(Track).order_by(Track.created_at.desc()).limit(100).all()
+    return random.sample(tracks, min(len(tracks), 12)) if tracks else []
 
 
 @router.get("/{track_id}", response_model=TrackResponse)

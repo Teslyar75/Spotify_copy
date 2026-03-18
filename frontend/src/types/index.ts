@@ -9,6 +9,7 @@ export interface Song {
 	duration: number;
 	created_at: string;
 	updated_at: string;
+	genre?: string | null;
 }
 
 export interface Album {

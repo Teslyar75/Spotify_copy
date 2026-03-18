@@ -1,20 +1,25 @@
 import Topbar from "@/components/Topbar";
 import { useMusicStore } from "@/stores/useMusicStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SectionGrid from "./components/SectionGrid";
 import { usePlayerStore } from "@/stores/usePlayerStore";
+import { Song } from "@/types";
 
 const HomePage = () => {
 	const {
 		fetchFeaturedSongs,
 		fetchMadeForYouSongs,
 		fetchTrendingSongs,
+		fetchTracksByGenre,
 		isLoading,
 		madeForYouSongs,
 		featuredSongs,
 		trendingSongs,
 	} = useMusicStore();
+
+	const [tracksByGenre, setTracksByGenre] = useState<Record<string, Song[]>>({});
+	const [isLoadingGenres, setIsLoadingGenres] = useState(false);
 
 	const { initializeQueue } = usePlayerStore();
 
@@ -23,6 +28,18 @@ const HomePage = () => {
 		fetchMadeForYouSongs();
 		fetchTrendingSongs();
 	}, [fetchFeaturedSongs, fetchMadeForYouSongs, fetchTrendingSongs]);
+
+	useEffect(() => {
+		let cancelled = false;
+		setIsLoadingGenres(true);
+		fetchTracksByGenre().then((data) => {
+			if (!cancelled) {
+				setTracksByGenre(data);
+				setIsLoadingGenres(false);
+			}
+		});
+		return () => { cancelled = true; };
+	}, [fetchTracksByGenre]);
 
 	useEffect(() => {
 		if (madeForYouSongs.length > 0 && featuredSongs.length > 0 && trendingSongs.length > 0) {
@@ -87,6 +104,15 @@ const HomePage = () => {
 							songs={trendingSongs} 
 							isLoading={isLoading} 
 						/>
+
+						{Object.entries(tracksByGenre).map(([genre, songs]) => (
+							<SectionGrid
+								key={genre}
+								title={genre}
+								songs={songs}
+								isLoading={isLoadingGenres}
+							/>
+						))}
 					</div>
 				</div>
 			</ScrollArea>

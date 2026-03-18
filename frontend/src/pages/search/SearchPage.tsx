@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import Topbar from "@/components/Topbar";
 import { useMusicStore } from "@/stores/useMusicStore";
@@ -11,9 +11,25 @@ import { Play, Search, User, Heart, Loader2 } from "lucide-react";
 import { Song, Album } from "@/types";
 import { axiosInstance } from "@/lib/axios";
 
+// Маппинг кнопок жанров на значения для API (совпадает с Jamendo tags)
+const GENRE_MAP: Record<string, string> = {
+	Rock: "rock",
+	Pop: "pop",
+	Jazz: "jazz",
+	Classical: "classical",
+	Electronic: "electronic",
+	"Hip-Hop": "hiphop",
+	"R&B": "rnb",
+	Ambient: "ambient",
+};
+
 const SearchPage = () => {
 	const [query, setQuery] = useState("");
+	const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
 	const [isSearching, setIsSearching] = useState(false);
+	const [isLoadingTracks, setIsLoadingTracks] = useState(false);
+	const [browseTracks, setBrowseTracks] = useState<Song[]>([]);
+	const [tracksByGenre, setTracksByGenre] = useState<Record<string, Song[]>>({});
 	const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const { playAlbum, setCurrentSong } = usePlayerStore();
@@ -26,14 +42,43 @@ const SearchPage = () => {
 		artists: { name: string }[];
 	}>({ tracks: [], albums: [], artists: [] });
 
-	// Загружаем альбомы для быстрых результатов (жанровые кнопки)
+	// Загружаем альбомы
 	useEffect(() => {
 		fetchAlbums();
 	}, [fetchAlbums]);
 
+	// Загружаем треки для просмотра (все или по жанру) — когда нет текстового поиска
+	const fetchBrowseTracks = useCallback(async (genre: string | null) => {
+		setIsLoadingTracks(true);
+		try {
+			if (genre) {
+				const params = { limit: "500", genre };
+				const res = await axiosInstance.get("/songs/", { params });
+				setBrowseTracks(res.data);
+				setTracksByGenre({});
+			} else {
+				const res = await axiosInstance.get("/songs/browse-by-genre", {
+					params: { limit_per_genre: 25 },
+				});
+				setTracksByGenre(res.data);
+				setBrowseTracks([]);
+			}
+		} catch {
+			setBrowseTracks([]);
+			setTracksByGenre({});
+		} finally {
+			setIsLoadingTracks(false);
+		}
+	}, []);
+
+	useEffect(() => {
+		if (!query.trim()) fetchBrowseTracks(selectedGenre);
+	}, [query, selectedGenre, fetchBrowseTracks]);
+
 	const doSearch = async (q: string) => {
 		if (!q.trim()) {
 			setResults({ tracks: [], albums: [], artists: [] });
+			fetchBrowseTracks(selectedGenre);
 			return;
 		}
 		setIsSearching(true);
@@ -56,9 +101,13 @@ const SearchPage = () => {
 			setResults({ tracks: [], albums: [], artists: [] });
 			return;
 		}
-		debounceTimer.current = setTimeout(() => {
-			doSearch(value);
-		}, 400);
+		debounceTimer.current = setTimeout(() => doSearch(value), 400);
+	};
+
+	const handleGenreClick = (genreLabel: string) => {
+		const genreValue = GENRE_MAP[genreLabel] ?? genreLabel.toLowerCase();
+		setSelectedGenre((prev) => (prev === genreValue ? null : genreValue));
+		setQuery("");
 	};
 
 	const handleSubmit = (e: React.FormEvent) => {
@@ -121,28 +170,162 @@ const SearchPage = () => {
 			<ScrollArea className="flex-1 scrollbar-spotify">
 				<div className="relative z-10 px-4 pb-28 pt-4 sm:px-5 sm:pt-5 md:px-6 md:pb-32">
 					{!query.trim() ? (
-						/* Начальный экран — популярные жанры и альбомы */
+						/* Начальный экран — жанры, треки (все или по жанру), альбомы */
 						<div className="space-y-6">
 							<div>
 								<h2 className="mb-3 text-base font-bold text-white sm:text-lg">
 									Browse by genre
 								</h2>
 								<div className="flex flex-wrap gap-2 sm:gap-3">
-									{["Rock", "Pop", "Jazz", "Classical", "Electronic", "Hip-Hop", "R&B", "Ambient"].map((genre) => (
-										<Button
-											key={genre}
-											variant="ghost"
-											className="rounded-full bg-white/10 px-4 text-sm text-white hover:bg-white/20 sm:px-5"
-											onClick={() => {
-												setQuery(genre);
-												doSearch(genre);
-											}}
-										>
-											{genre}
-										</Button>
-									))}
+									<Button
+										variant="ghost"
+										className={`rounded-full px-4 text-sm sm:px-5 ${
+											!selectedGenre ? "bg-spotify-green text-black hover:bg-spotify-green-hover" : "bg-white/10 text-white hover:bg-white/20"
+										}`}
+										onClick={() => setSelectedGenre(null)}
+									>
+										All
+									</Button>
+									{["Rock", "Pop", "Jazz", "Classical", "Electronic", "Hip-Hop", "R&B", "Ambient"].map((genre) => {
+										const genreValue = GENRE_MAP[genre] ?? genre.toLowerCase();
+										const isActive = selectedGenre === genreValue;
+										return (
+											<Button
+												key={genre}
+												variant="ghost"
+												className={`rounded-full px-4 text-sm sm:px-5 ${
+													isActive ? "bg-spotify-green text-black hover:bg-spotify-green-hover" : "bg-white/10 text-white hover:bg-white/20"
+												}`}
+												onClick={() => handleGenreClick(genre)}
+											>
+												{genre}
+											</Button>
+										);
+									})}
 								</div>
 							</div>
+
+							{/* Треки — по категориям (жанрам) или по выбранному жанру */}
+							{isLoadingTracks ? (
+								<div className="flex items-center gap-3 py-8 text-sm text-spotify-text-muted">
+									<Loader2 className="h-5 w-5 animate-spin text-spotify-green" />
+									<span>Loading tracks...</span>
+								</div>
+							) : selectedGenre ? (
+								<div>
+									<h2 className="mb-3 text-base font-bold text-white sm:text-lg">
+										Tracks: {selectedGenre}
+									</h2>
+									{browseTracks.length > 0 ? (
+										<div className="space-y-2">
+											{browseTracks.map((song, i) => (
+												<div
+													key={song.id}
+													className="group flex cursor-pointer items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-white/10 sm:gap-4 sm:p-3"
+													onClick={() => setCurrentSong(song)}
+												>
+													<span className="w-5 text-xs text-spotify-text-muted sm:w-6 sm:text-sm">{i + 1}</span>
+													<img
+														src={song.image_url || "/album-placeholder.png"}
+														alt=""
+														className="h-10 w-10 rounded object-cover sm:h-12 sm:w-12"
+													/>
+													<div className="min-w-0 flex-1">
+														<p className="truncate text-sm font-medium text-white sm:text-base">{song.title}</p>
+														<p className="truncate text-xs text-spotify-text-muted sm:text-sm">{song.artist}</p>
+													</div>
+													<button
+														onClick={(e) => {
+															e.stopPropagation();
+															isSongLiked(song.id) ? unlikeSong(song.id) : likeSong(song);
+														}}
+														className={`transition-transform hover:scale-110 ${
+															isSongLiked(song.id) ? "" : "opacity-0 group-hover:opacity-100"
+														}`}
+													>
+														<Heart
+															className={`h-4 w-4 ${isSongLiked(song.id) ? "text-spotify-green" : "text-white/50 hover:text-white"}`}
+															fill={isSongLiked(song.id) ? "currentColor" : "none"}
+														/>
+													</button>
+													<Button
+														size="icon"
+														className="h-9 w-9 rounded-full bg-spotify-green opacity-0 transition-opacity group-hover:opacity-100 hover:bg-spotify-green-hover sm:h-10 sm:w-10"
+														onClick={(e) => {
+															e.stopPropagation();
+															setCurrentSong(song);
+														}}
+													>
+														<Play className="ml-0.5 h-4 w-4 text-black sm:h-5 sm:w-5" fill="currentColor" />
+													</Button>
+												</div>
+											))}
+										</div>
+									) : (
+										<p className="py-6 text-sm text-spotify-text-muted">
+											No tracks in genre &quot;{selectedGenre}&quot;
+										</p>
+									)}
+								</div>
+							) : Object.keys(tracksByGenre).length > 0 ? (
+								<div className="space-y-8">
+									{Object.entries(tracksByGenre).map(([genre, songs]) => (
+										<div key={genre}>
+											<h2 className="mb-3 text-base font-bold text-white sm:text-lg">
+												{genre}
+											</h2>
+											<div className="space-y-2">
+												{songs.map((song, i) => (
+													<div
+														key={song.id}
+														className="group flex cursor-pointer items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-white/10 sm:gap-4 sm:p-3"
+														onClick={() => setCurrentSong(song)}
+													>
+														<span className="w-5 text-xs text-spotify-text-muted sm:w-6 sm:text-sm">{i + 1}</span>
+														<img
+															src={song.image_url || "/album-placeholder.png"}
+															alt=""
+															className="h-10 w-10 rounded object-cover sm:h-12 sm:w-12"
+														/>
+														<div className="min-w-0 flex-1">
+															<p className="truncate text-sm font-medium text-white sm:text-base">{song.title}</p>
+															<p className="truncate text-xs text-spotify-text-muted sm:text-sm">{song.artist}</p>
+														</div>
+														<button
+															onClick={(e) => {
+																e.stopPropagation();
+																isSongLiked(song.id) ? unlikeSong(song.id) : likeSong(song);
+															}}
+															className={`transition-transform hover:scale-110 ${
+																isSongLiked(song.id) ? "" : "opacity-0 group-hover:opacity-100"
+															}`}
+														>
+															<Heart
+																className={`h-4 w-4 ${isSongLiked(song.id) ? "text-spotify-green" : "text-white/50 hover:text-white"}`}
+																fill={isSongLiked(song.id) ? "currentColor" : "none"}
+															/>
+														</button>
+														<Button
+															size="icon"
+															className="h-9 w-9 rounded-full bg-spotify-green opacity-0 transition-opacity group-hover:opacity-100 hover:bg-spotify-green-hover sm:h-10 sm:w-10"
+															onClick={(e) => {
+																e.stopPropagation();
+																setCurrentSong(song);
+															}}
+														>
+															<Play className="ml-0.5 h-4 w-4 text-black sm:h-5 sm:w-5" fill="currentColor" />
+														</Button>
+													</div>
+												))}
+											</div>
+										</div>
+									))}
+								</div>
+							) : (
+								<p className="py-6 text-sm text-spotify-text-muted">
+									No tracks yet. Import from Jamendo or add via admin panel.
+								</p>
+							)}
 
 							{albums.length > 0 && (
 								<div>
