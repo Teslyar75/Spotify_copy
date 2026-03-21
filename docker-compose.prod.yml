@@ -1,0 +1,61 @@
+# Production: без монтирования исходников backend (код из образа).
+# Запуск: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# Обязательно задайте в .env.prod: SECRET_KEY, CORS_ORIGINS, POSTGRES_PASSWORD (сильные значения).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: spotify_postgres_prod
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_DB: ${POSTGRES_DB:-spotify_clone}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    # Порт наружу не публикуем — только сеть Docker
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: spotify_backend_prod
+    volumes:
+      - media_data_prod:/app/media
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-spotify_clone}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS to your public site URL(s)}
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env.prod}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      JAMENDO_CLIENT_ID: ${JAMENDO_CLIENT_ID:-b6747d04}
+      RECOMMENDATION_CACHE_TTL: ${RECOMMENDATION_CACHE_TTL:-300}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "python -m alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    restart: unless-stopped
+    expose:
+      - "8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+    container_name: spotify_frontend_prod
+    ports:
+      - "${FRONTEND_HTTP_PORT:-80}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data_prod:
+  media_data_prod:
