@@ -15,6 +15,7 @@ interface AuthStore {
 	refreshToken: () => Promise<void>;
 	checkAuth: () => Promise<void>;
 	setTokensFromRefresh: (tokens: AuthTokens) => void;
+	setAuthData: (data: { access_token: string; refresh_token: string; user: User }) => void;
 	reset: () => void;
 }
 
@@ -127,6 +128,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 	// Слушаем обновление токена из axios interceptor
 	setTokensFromRefresh: (tokens: AuthTokens) => {
 		set({ tokens, isAuthenticated: true });
+	},
+
+	setAuthData: (data) => {
+		const { access_token, refresh_token, user } = data;
+		set({
+			tokens: { access_token, refresh_token },
+			user,
+			isAuthenticated: true,
+			isLoading: false,
+		});
+		localStorage.setItem(TOKEN_KEY, JSON.stringify({ access_token, refresh_token }));
+		localStorage.setItem(USER_KEY, JSON.stringify(user));
 	},
 
 	reset: () => {

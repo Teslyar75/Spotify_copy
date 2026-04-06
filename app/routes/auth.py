@@ -210,6 +210,109 @@ def refresh_token(refresh_data: dict, db: Session = Depends(get_db)):
     return {"access_token": new_access_token, "refresh_token": new_refresh_token}
 
 
+from app.oauth import (
+    get_google_auth_url,
+    get_github_auth_url,
+    exchange_google_code,
+    exchange_github_code,
+    FRONTEND_URL,
+)
+
+
+@router.get("/google")
+def google_login():
+    """Редирект на Google OAuth."""
+    return {"url": get_google_auth_url(state="google-auth")}
+
+
+@router.get("/google/callback")
+async def google_callback(code: str, db: Session = Depends(get_db)):
+    """Обработка ответа от Google."""
+    try:
+        user_data = await exchange_google_code(code)
+        return await _login_or_register_oauth_user(user_data, "google", db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Google auth failed: {str(e)}"
+        )
+
+
+@router.get("/github")
+def github_login():
+    """Редирект на GitHub OAuth."""
+    return {"url": get_github_auth_url(state="github-auth")}
+
+
+@router.get("/github/callback")
+async def github_callback(code: str, db: Session = Depends(get_db)):
+    """Обработка ответа от GitHub."""
+    try:
+        user_data = await exchange_github_code(code)
+        return await _login_or_register_oauth_user(user_data, "github", db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"GitHub auth failed: {str(e)}"
+        )
+
+
+async def _login_or_register_oauth_user(user_data: dict, provider: str, db: Session):
+    """
+    Автоматический вход или регистрация пользователя через OAuth.
+    
+    1. Ищем пользователя по email
+    2. Если нет — создаём нового (без пароля)
+    3. Генерируем токены и редиректим на фронтенд с токенами в URL
+    """
+    from fastapi.responses import RedirectResponse
+    from app.routes.users import _ensure_profile
+
+    email = user_data["email"]
+    user = db.query(AuthUser).filter(AuthUser.email == email).first()
+
+    if not user:
+        # Регистрация нового пользователя
+        # Пароль не задаём (будет NULL или пустой), так как вход через OAuth
+        username = user_data["name"] or email.split("@")[0]
+        user = AuthUser(
+            email=email,
+            password_hash="",  # вход по паролю для OAuth-аккаунтов невозможен без сброса пароля
+            initial_username=username,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        # Сразу создаём профиль и ставим аватарку из соцсети
+        profile = _ensure_profile(user.id, db)
+        if user_data.get("picture"):
+            profile.avatar_url = user_data["picture"]
+            db.commit()
+    else:
+        profile = _ensure_profile(user.id, db)
+
+    # Генерируем токены
+    access_token = create_access_token(
+        data={"sub": str(user.id), "email": user.email},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+    # Редиректим на фронтенд с токенами в query params.
+    # Фронтенд на странице /login (или специальной /oauth/callback) считает их и сохранит.
+    from urllib.parse import urlencode
+    params = {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "user_id": str(user.id),
+        "username": profile.username,
+        "email": user.email,
+        "avatar_url": profile.avatar_url or "",
+    }
+    return RedirectResponse(url=f"{FRONTEND_URL}/login?{urlencode(params)}")
+
+
 @router.get("/me", response_model=UserResponse)
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),

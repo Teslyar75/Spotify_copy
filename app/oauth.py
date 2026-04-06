@@ -118,7 +118,10 @@ async def exchange_github_code(code: str) -> dict:
             )
             if email_response.status_code == 200:
                 emails = email_response.json()
-                primary = next((e for e in emails if e.get("primary")), emails[0] if emails else {})
+                primary = next(
+                    (e for e in emails if e.get("primary")),
+                    emails[0] if emails else {}
+                )
                 email = primary.get("email", "")
 
     return {

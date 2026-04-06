@@ -124,14 +124,23 @@ export const JamendoImportModal = ({ isOpen, onClose, onImported }: Props) => {
 		setLoading(true);
 		setResults([]);
 		try {
-			const params = new URLSearchParams({ limit: "30" });
+			const params = new URLSearchParams({ limit: "60" });
 			if (q.trim()) params.set("q", q.trim());
 			if (t.trim()) params.set("tags", t.trim());
 			const res = await axiosInstance.get(`/jamendo/search?${params}`);
 			setResults(res.data);
 			if (res.data.length === 0) toast("Ничего не найдено");
-		} catch {
-			toast.error("Ошибка загрузки. Проверьте подключение.");
+		} catch (err: unknown) {
+			const detail =
+				err &&
+				typeof err === "object" &&
+				"response" in err &&
+				(err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+			const msg =
+				typeof detail === "string"
+					? detail
+					: "Ошибка загрузки. Проверьте подключение и JAMENDO_CLIENT_ID на сервере.";
+			toast.error(msg);
 		} finally {
 			setLoading(false);
 		}
@@ -163,8 +172,15 @@ export const JamendoImportModal = ({ isOpen, onClose, onImported }: Props) => {
 				onImported();
 			}
 			setImported((prev) => new Set(prev).add(track.jamendo_id));
-		} catch {
-			toast.error("Ошибка импорта трека");
+		} catch (err: unknown) {
+			const detail =
+				err &&
+				typeof err === "object" &&
+				"response" in err &&
+				(err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+			const msg =
+				typeof detail === "string" ? detail : "Ошибка импорта трека";
+			toast.error(msg);
 		} finally {
 			setImporting(null);
 		}
@@ -181,7 +197,7 @@ export const JamendoImportModal = ({ isOpen, onClose, onImported }: Props) => {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleClose}>
-			<DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-2xl w-full flex flex-col" style={{ maxHeight: "90vh" }}>
+			<DialogContent className="bg-zinc-900 border-zinc-700 text-white w-full max-w-[calc(100vw-1.5rem)] sm:max-w-2xl flex flex-col max-h-[90dvh]">
 				<DialogHeader>
 					<DialogTitle className="text-xl flex items-center gap-2">
 						<Music className="h-5 w-5 text-green-400" />

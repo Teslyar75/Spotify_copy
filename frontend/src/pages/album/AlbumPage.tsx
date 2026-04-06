@@ -89,7 +89,7 @@ const AlbumPage = () => {
 						<img
 							src={album.image_url || "/album-placeholder.png"}
 							alt={album.title}
-							className="h-28 w-28 rounded object-cover shadow-2xl sm:h-36 sm:w-36 md:h-44 md:w-44 lg:h-48 lg:w-48"
+							className="h-20 w-20 shrink-0 rounded object-cover shadow-2xl sm:h-36 sm:w-36 md:h-44 md:w-44 lg:h-48 lg:w-48"
 						/>
 
 						<div className="flex min-w-0 flex-col justify-end">

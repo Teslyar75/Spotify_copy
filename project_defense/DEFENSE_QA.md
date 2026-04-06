@@ -1,7 +1,7 @@
 # 100 вопросов и ответов к защите проекта
 
 **Проект:** Spotify Clone  
-**Стек:** FastAPI · PostgreSQL · SQLAlchemy · Alembic · Docker · Nginx · JWT · WebSocket  
+**Стек:** FastAPI · PostgreSQL · SQLAlchemy · Alembic · Docker · Nginx · JWT · WebSocket · Jamendo API  
 **Роль:** Backend-разработчик
 
 > Документ структурирован по темам. Читай подряд или прыгай к нужному разделу.
@@ -15,7 +15,7 @@
 3. [Аутентификация и JWT](#3-аутентификация-и-jwt) — вопросы 23–35
 4. [База данных и SQLAlchemy](#4-база-данных-и-sqlalchemy) — вопросы 36–50
 5. [Alembic — миграции](#5-alembic--миграции) — вопросы 51–57
-6. [Бизнес-логика сервисов](#6-бизнес-логика-сервисов) — вопросы 58–72
+6. [Бизнес-логика сервисов](#6-бизнес-логика-сервисов) — вопросы 58–72, 72а
 7. [WebSocket и чат](#7-websocket-и-чат) — вопросы 73–79
 8. [Docker и деплой](#8-docker-и-деплой) — вопросы 80–88
 9. [Исправленные баги](#9-исправленные-баги) — вопросы 89–94
@@ -41,7 +41,8 @@ Spotify Clone — веб-приложение для воспроизведен�
 - **Alembic** — миграции БД
 - **python-jose** — JWT-токены
 - **bcrypt** — хеширование паролей
-- **Uvicorn** — ASGI-сервер
+- **httpx** — HTTP-клиент (запросы к Jamendo API, скачивание обложек)
+- ***Uvicorn** — ASGI-сервер*
 - **Docker + Docker Compose** — контейнеризация
 - **Nginx** — обратный прокси для фронтенда
 
@@ -58,32 +59,33 @@ FastAPI дает три ключевых преимущества: автома�
 ```
 app/
 ├── main.py          — точка входа, регистрация роутеров, CORS, /health
-├── config.py        — настройки (JWT, БД, admin-emails) из .env
+├── config.py        — настройки (JWT, БД, admin-emails, JAMENDO_CLIENT_ID) из .env
 ├── database.py      — движок SQLAlchemy, get_db dependency
 ├── dependencies.py  — get_current_user_id, get_admin_user_id
+├── oauth.py         — OAuth-провайдеры Google/GitHub (подготовка, эндпоинты не подключены)
 ├── schemas.py       — Pydantic-схемы (валидация входа/выхода)
 ├── utils.py         — bcrypt, JWT (create/decode)
 ├── websocket.py     — ConnectionManager
 ├── models/          — ORM-модели (таблицы БД)
-└── routes/          — эндпоинты по доменам (auth, songs, albums…)
+└── routes/          — эндпоинты по доменам (auth, songs, albums, jamendo…)
 ```
 
 ---
 
 **В5. Как организовано разделение по сервисам?**
 
-Каждый домен вынесен в отдельный роутер: `auth`, `songs`, `albums`, `playlists`, `search`, `users`, `player`, `recommendations`, `upload`, `seed`, `websocket`. Каждый роутер монтируется на свой префикс (`/api/songs`, `/api/auth` и т.д.) в `main.py`. Это позволяет легко масштабировать — в будущем каждый роутер можно вынести в отдельный микросервис.
+Каждый домен вынесен в отдельный роутер: `auth`, `songs`, `albums`, `playlists`, `search`, `users`, `player`, `recommendations`, `upload`, `seed`, `jamendo`, `websocket`. Каждый роутер монтируется на свой префикс (`/api/songs`, `/api/auth`, `/api/jamendo` и т.д.) в `main.py`. Это позволяет легко масштабировать — в будущем каждый роутер можно вынести в отдельный микросервис.
 
 ---
 
 **В6. Сколько таблиц в базе данных? Перечислите.**
 
-8 таблиц:
+9 таблиц:
 
-1. `auth_users` — учётные данные (email, password_hash)
+1. `auth_users` — учётные данные (email, password_hash, initial_username)
 2. `user_profiles` — публичный профиль (username, avatar, bio)
 3. `albums` — музыкальные альбомы
-4. `tracks` — треки (связаны с альбомом через album_id)
+4. `tracks` — треки (связаны с альбомом через album_id, поле `genre` для фильтрации)
 5. `playlists` — плейлисты пользователей
 6. `playlist_tracks` — связующая таблица плейлист↔трек с полем `position`
 7. `listening_history` — история прослушиваний
@@ -118,7 +120,10 @@ app/
 
 **В10. Что такое `/api/seed` и зачем он нужен?**
 
-Эндпоинт для наполнения базы тестовыми данными: создаёт тестового пользователя (`test@example.com / test123`), 4 альбома, 18 треков с аудио с SoundHelix (бесплатные mp3-примеры) и тестовый плейлист. Используется при первом запуске для демонстрации. Параметр `?force=true` обновляет URL треков без пересоздания всего.
+Роутер seed предоставляет эндпоинты для наполнения базы тестовыми данными:
+
+- **POST /api/seed/seed** — создаёт тестового пользователя (`test@example.com / test123`), 4 альбома, 18 треков с аудио с SoundHelix (бесплатные mp3-примеры) и тестовый плейлист «My Favorite Songs» (5 треков). Обложки альбомов и треков скачиваются локально (picsum.photos ненадёжен из браузера). Используется при первом запуске для демонстрации. Параметр `?force=true` обновляет URL треков и обложки без пересоздания всего.
+- **POST /api/seed/fix-images** — скачивает все внешние обложки (http/https) и заменяет их на локальные пути. Решает проблему с CORS и таймаутами.
 
 ---
 
@@ -135,7 +140,23 @@ app/
 
 **В12. Как проверить, что backend работает?**
 
-Эндпоинт `GET /health` выполняет `SELECT 1` к PostgreSQL и возвращает `{"database": "ok"}`. Также у каждого роутера есть свой `GET .../health` с именем сервиса. Docker Compose настроен с `healthcheck` для Postgres — backend не стартует, пока БД не готова.
+**Основной эндпоинт** `GET /health` (корневой URL, без префикса `/api`):
+
+- Выполняет `SELECT 1` к PostgreSQL через dependency `get_db`
+- При успехе возвращает `{"database": "ok"}`
+- При ошибке подключения — `{"database": "error", "detail": "<текст ошибки>"}`
+
+**Роутерные health** — у части роутеров есть свой `GET .../health`:
+
+- `GET /api/auth/health`, `/api/songs/health`, `/api/users/health`, `/api/playlists/health`, `/api/player/health`, `/api/recommendations/health`
+- Возвращают `{"status": "ok", "service": "auth"}` (и т.д.) — проверяют только загрузку роутера, БД не опрашивают
+- У albums, search, seed, upload, jamendo, websocket отдельного health нет
+
+**Docker Compose:**
+
+- У Postgres настроен `healthcheck`: `pg_isready -U postgres` каждые 5 сек, до 5 попыток
+- Backend стартует только после `condition: service_healthy` у Postgres
+- Frontend зависит от backend (`depends_on: backend`), но backend сам не имеет healthcheck — frontend стартует сразу после запуска backend-контейнера
 
 ---
 
@@ -207,7 +228,7 @@ Pydantic — библиотека валидации данных. Схемы (�
 
 **В19. Как работает пагинация треков?**
 
-Принимает параметры `limit` (макс. 100, по умолчанию 50) и `offset` через `Query`. Вместо `.limit().offset()` используется `.slice(start, stop)` — это более безопасный способ для PostgreSQL, который не падает на граничных значениях. Треки сортируются по `created_at DESC` (новые первыми).
+Принимает параметры `limit` (макс. 500, по умолчанию 100), `offset` и опционально `genre` через `Query`. Вместо `.limit().offset()` используется `.slice(start, stop)` — это более безопасный способ для PostgreSQL, который не падает на граничных значениях. Треки сортируются по `created_at DESC` (новые первыми). При указании `genre` фильтруются только треки, у которых жанр содержит заданную строку (регистронезависимо).
 
 ---
 
@@ -379,13 +400,13 @@ SQLAlchemy ORM позволяет работать с таблицами как 
 
 **В38. Что такое `relationship` и `cascade="all, delete-orphan"`?**
 
-`relationship` определяет связь между моделями на уровне Python — позволяет обращаться к связанным объектам как к атрибутам. `cascade="all, delete-orphan"` означает: при удалении родительского объекта автоматически удаляются дочерние (без отдельного DELETE). Например, удаление альбома удалит его треки.
+`relationship` определяет связь между моделями на уровне Python — позволяет обращаться к связанным объектам как к атрибутам. `cascade="all, delete-orphan"` означает: при удалении родительского объекта автоматически удаляются дочерние (без отдельного DELETE). Например, удаление плейлиста удалит записи в `playlist_tracks`. **Важно:** для связи Album→Track используется `ondelete="SET NULL"` — при удалении альбома треки не удаляются, а становятся синглами (album_id = NULL).
 
 ---
 
 **В39. Почему `album_name` хранится в треке, если есть `album_id`?**
 
-Денормализация ради производительности поиска. Поиск по `Track.album_name.ilike(...)` работает без JOIN с таблицей albums. Если бы поле не дублировалось, поиск треков по названию альбома требовал бы JOIN. Компромисс: при изменении названия альбома нужно обновлять `album_name` во всех треках (это делается в `PUT /api/albums/{id}`).
+Денормализация ради производительности поиска. Поиск по `Track.album_name.ilike(...)` работает без JOIN с таблицей albums. Если бы поле не дублировалось, поиск треков по названию альбома требовал бы JOIN. Компромисс: при изменении названия альбома нужно обновлять `album_name` во всех треках (это делается в `PUT /api/albums/{id}`). Аналогично поле `genre` в треке используется для фильтрации и группировки по категориям (`GET /api/songs/browse-by-genre`).
 
 ---
 
@@ -421,7 +442,7 @@ SQLAlchemy ORM позволяет работать с таблицами как 
 Индекс — структура данных (обычно B-Tree), ускоряющая поиск. Без индекса PostgreSQL делает полный перебор таблицы (seq scan). В проекте:
 
 - `idx_auth_users_email` — unique-индекс, быстрый поиск при логине
-- `idx_tracks_artist`, `idx_tracks_album_id` — для поиска и фильтрации
+- `idx_tracks_artist`, `idx_tracks_album_id`, `ix_tracks_genre` — для поиска и фильтрации по жанру
 - `idx_user_profiles_username` — unique-индекс
 - Индексы на `listening_history.user_id`, `track_id` — для агрегации истории
 - `idx_playlists_owner` — для `GET /playlists/me`
@@ -487,7 +508,9 @@ Alembic — инструмент управления миграциями БД 
 **В52. В каком порядке применяются миграции в проекте?**
 
 ```
-001_initial_schema → 003_fk_to_user_profiles → 002_add_music_tables → 004_add_initial_username → 6c885fc11b07_merge_heads
+001_initial_schema → 002_fix_listening_history_index → 003_fk_to_user_profiles
+  → 002_add_music_tables (и 004_initial_username — параллельные ветки)
+  → 6c885fc11b07_merge_heads → 005_add_track_genre
 ```
 
 Порядок определяется цепочкой `down_revision`. Применяются командой `alembic upgrade head` — до последней версии. В Docker это происходит автоматически при старте backend.
@@ -496,7 +519,7 @@ Alembic — инструмент управления миграциями БД 
 
 **В53. Что создаёт `001_initial_schema.py`?**
 
-Базовые таблицы: `auth_users`, `tracks` (первоначальный вид), `user_profiles`, `playlists`, `playlist_tracks`, `listening_history`. Также активирует расширение PostgreSQL `uuid-ossp` для генерации UUID через `uuid_generate_v4()`.
+Базовые таблицы: `auth_users`, `tracks` (первоначальный вид: title, artist, album, duration, file_url), `user_profiles`, `playlists`, `playlist_tracks`, `listening_history`. Также активирует расширение PostgreSQL `uuid-ossp` для генерации UUID через `uuid_generate_v4()`. Таблицы `albums`, `user_statuses`, `messages` добавляются в `002_add_music_tables`.
 
 ---
 
@@ -508,7 +531,7 @@ Alembic — инструмент управления миграциями БД 
 
 **В55. Можно ли откатить миграцию? Как?**
 
-Да, через `alembic downgrade -1` (на одну версию назад) или `alembic downgrade <revision_id>`. Каждая миграция имеет функцию `downgrade()`, которая отменяет изменения. Например, `downgrade` для `002_add_music_tables.py` дропает таблицы `albums`, `messages`, `user_statuses` и удаляет добавленные колонки из `tracks`.
+Да, через `alembic downgrade -1` (на одну версию назад) или `alembic downgrade <revision_id>`. Каждая миграция имеет функцию `downgrade()`, которая отменяет изменения. Например, `downgrade` для `002_add_music_tables.py` дропает таблицы `albums`, `messages`, `user_statuses` и удаляет добавленные колонки из `tracks`. `005_add_track_genre` удаляет колонку `genre` и индекс.
 
 ---
 
@@ -519,7 +542,7 @@ Alembic — инструмент управления миграциями БД 
 3. Проверить сгенерированный файл
 4. Применить: `alembic upgrade head`
 
-Пример из проекта: `004_add_initial_username.py` добавил поле `initial_username` в `auth_users`.
+Примеры из проекта: `004_initial_username.py` добавил поле `initial_username` в `auth_users`; `005_add_track_genre.py` добавил поле `genre` и индекс в `tracks`.
 
 ---
 
@@ -617,7 +640,7 @@ TTL настраивается через `RECOMMENDATION_CACHE_TTL` (по ум�
 
 **В68. Что такое `featured` и `trending` треки? Как они отбираются?**
 
-В MVP оба работают одинаково: берут 10 треков из БД и возвращают случайную выборку из них (`random.sample`). В реальном Spotify trending определяется количеством прослушиваний, featured — редакционным выбором. Текущая реализация — заглушка для демонстрации функционала.
+В MVP оба работают одинаково: берут до 100 последних треков из БД и возвращают 12 случайных (`random.sample`). В реальном Spotify trending определяется количеством прослушиваний, featured — редакционным выбором. Текущая реализация — заглушка для демонстрации функционала.
 
 ---
 
@@ -652,7 +675,18 @@ def _require_owner(playlist, user_id):
 
 **В72. Как работает `TrackResponse.album_name` — оно не в схеме TrackBase?**
 
-`album_name` хранится в БД (в модели Track), но в схеме `TrackBase` и `TrackCreate` его нет — оно вычисляется на бэкенде из `album_id`. В `TrackResponse` через `from_attributes=True` SQLAlchemy-объект сериализуется напрямую, включая все поля модели. Поэтому `album_name` попадает в ответ API, даже не будучи явно объявленным в схеме ответа.
+`album_name` хранится в БД (в модели Track), но в схеме `TrackBase` и `TrackCreate` его нет — оно вычисляется на бэкенде из `album_id`. В `TrackResponse` через `from_attributes=True` SQLAlchemy-объект сериализуется напрямую, включая все поля модели (в т.ч. `album_name`, `genre`). Поэтому они попадают в ответ API, даже не будучи явно объявленными в схеме ответа.
+
+---
+
+**В72а. Что такое Jamendo и как он интегрирован в проект?**
+
+Jamendo — бесплатный API с музыкой по лицензии Creative Commons. Интеграция через роутер `/api/jamendo`:
+
+- **GET /api/jamendo/search** — поиск треков по запросу `q` и тегам жанров. Исключает уже импортированные треки. Стратегия: сначала поиск по имени артиста, при отсутствии результатов — свободный текстовый поиск.
+- **POST /api/jamendo/import** — сохранить трек из Jamendo в локальную БД (только для админов). Аудио **не скачивается** — в `file_url` сохраняется прямая ссылка на Jamendo, браузер стримит с их серверов. Обложка скачивается локально в `media/images/`. Дубликаты определяются по `trackid` в URL.
+
+`JAMENDO_CLIENT_ID` задаётся в `config.py` (по умолчанию демо-ключ `b6747d04`).
 
 ---
 
@@ -907,7 +941,9 @@ OR-фильтр в search охватывал только `Track.title` и `Trac
 8. **Логирование** — структурированные логи (JSON) + ELK stack
 9. **Полнотекстовый поиск** — PostgreSQL FTS или Elasticsearch вместо `ilike`
 10. **Pagination в истории** — сейчас история не пагинирована
+11. **Liked Songs на backend** — сейчас любимые треки хранятся только на фронте (useLibraryStore + localStorage). Для синхронизации между устройствами нужна таблица `liked_tracks` в БД.
+12. **OAuth** — модуль `oauth.py` с Google/GitHub подготовлен, но callback-эндпоинты не подключены в auth-роутере.
 
 ---
 
-*Документ составлен 14.03.2026. Удачной защиты!*
+*Документ обновлён 19.03.2026. Удачной защиты!*

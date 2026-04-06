@@ -3,7 +3,7 @@ from pathlib import Path
 
 from PIL import Image
 
-src = Path(__file__).parent / "spotify-clone-icon.png"
+src = Path(__file__).parent / "spotify-clone.png"
 if not src.exists():
     print("PNG иконка не найдена")
     exit(1)

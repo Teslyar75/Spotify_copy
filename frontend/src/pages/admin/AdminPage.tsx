@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Music, Disc, Upload, Pencil, Trash2, ChevronDown, ChevronUp, Radio } from "lucide-react";
 import { JamendoImportModal } from "@/components/ui/JamendoImportModal";
+import { TrackCoverImg } from "@/components/TrackCoverImg";
 import { Card, CardContent } from "@/components/ui/card";
 import { Album, Song } from "@/types";
 import toast from "react-hot-toast";
@@ -43,14 +44,14 @@ const FileOrUrlInput = ({
 	return (
 		<div>
 			<label className="text-sm text-zinc-400 block mb-1">{label}</label>
-			<div className="flex gap-2">
+			<div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
 				<button
 					type="button"
-					className="flex-1 flex items-center justify-center gap-2 h-10 px-3 rounded-md bg-zinc-800 border border-zinc-700 cursor-pointer hover:bg-zinc-700"
+					className="flex w-full sm:flex-1 min-h-10 items-center justify-center gap-2 px-3 rounded-md bg-zinc-800 border border-zinc-700 cursor-pointer hover:bg-zinc-700 shrink-0"
 					onClick={() => inputRef.current?.click()}
 				>
-					<Upload className="h-4 w-4" />
-					<span className="text-sm">{file ? file.name.slice(0, 18) + "…" : "С файла"}</span>
+					<Upload className="h-4 w-4 shrink-0" />
+					<span className="text-sm truncate max-w-[min(100%,14rem)]">{file ? file.name.slice(0, 18) + "…" : "С файла"}</span>
 				</button>
 				<input
 					ref={inputRef}
@@ -66,7 +67,7 @@ const FileOrUrlInput = ({
 						}
 					}}
 				/>
-				<span className="text-zinc-500 self-center text-sm">или</span>
+				<span className="text-zinc-500 text-sm text-center sm:self-center sm:px-0.5 shrink-0">или</span>
 				<Input
 					placeholder="URL"
 					value={value}
@@ -74,7 +75,7 @@ const FileOrUrlInput = ({
 						onChange(e.target.value);
 						onFileChange(null);
 					}}
-					className="flex-1"
+					className="w-full sm:flex-1 min-w-0"
 				/>
 			</div>
 			{file && <p className="text-xs text-green-400 mt-1">✓ {file.name}</p>}
@@ -418,59 +419,61 @@ const AdminPage = () => {
 	};
 
 	return (
-		<div className="h-screen bg-zinc-900 text-white flex flex-col overflow-hidden">
+		<div className="min-h-0 h-[100dvh] bg-zinc-900 text-white flex flex-col overflow-hidden">
 			{/* Header */}
-			<div className="p-6 border-b border-zinc-800 flex-shrink-0">
-				<div className="flex items-center justify-between">
-					<div>
-						<h1 className="text-3xl font-bold mb-1">Admin Dashboard</h1>
-						<p className="text-zinc-400 text-sm">Вход: test@example.com / test123</p>
+			<div className="p-4 sm:p-6 border-b border-zinc-800 flex-shrink-0 pt-[max(1rem,env(safe-area-inset-top))]">
+				<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+					<div className="min-w-0">
+						<h1 className="text-2xl sm:text-3xl font-bold mb-1">Admin Dashboard</h1>
+						<p className="text-zinc-400 text-xs sm:text-sm break-words">Вход: test@example.com / test123</p>
 					</div>
 					<Link
 						to="/"
-						className="px-4 py-2 rounded-md bg-zinc-700 hover:bg-zinc-600 text-sm font-medium transition-colors"
+						className="inline-flex items-center justify-center shrink-0 px-4 py-2.5 rounded-md bg-zinc-700 hover:bg-zinc-600 text-sm font-medium transition-colors w-full sm:w-auto text-center"
 					>
 						← На главную
 					</Link>
 				</div>
 				{error && (
-					<div className="mt-3 p-3 rounded bg-red-900/30 border border-red-700 flex items-center justify-between">
-						<p className="text-red-300 text-sm">{error}</p>
-						<button onClick={clearError} className="text-red-300 hover:text-white ml-2 text-lg leading-none">×</button>
+					<div className="mt-3 p-3 rounded bg-red-900/30 border border-red-700 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+						<p className="text-red-300 text-sm break-words flex-1 min-w-0">{error}</p>
+						<button type="button" onClick={clearError} className="text-red-300 hover:text-white self-end sm:self-auto text-lg leading-none shrink-0">×</button>
 					</div>
 				)}
 			</div>
 
-			<ScrollArea className="flex-1 min-h-0">
-				<div className="p-6 space-y-8">
-				{/* Action buttons */}
-				<div className="flex gap-3 flex-wrap">
+			{/* Кнопки вне ScrollArea — иначе во viewport Radix текст на кнопках мог визуально пропадать на узком экране */}
+			<div className="flex-shrink-0 px-4 sm:px-6 py-3 border-b border-zinc-800 bg-zinc-900">
+				<div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap max-w-[1600px] mx-auto w-full min-w-0">
 					<Button
-						className="bg-green-600 hover:bg-green-700"
+						className="bg-green-600 hover:bg-green-700 w-full sm:w-auto min-h-11 shrink-0 justify-center overflow-visible whitespace-normal sm:whitespace-nowrap px-4"
 						onClick={() => { clearError(); setIsSongDialogOpen(true); }}
 					>
-						<Music className="mr-2 h-4 w-4" />
-						Добавить трек
+						<Music className="h-4 w-4 shrink-0" />
+						<span className="shrink-0">Добавить трек</span>
 					</Button>
 					<Button
-						className="bg-blue-600 hover:bg-blue-700"
+						className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto min-h-11 shrink-0 justify-center overflow-visible whitespace-normal sm:whitespace-nowrap px-4"
 						onClick={() => { clearError(); setIsAlbumDialogOpen(true); }}
 					>
-						<Disc className="mr-2 h-4 w-4" />
-						Добавить альбом
+						<Disc className="h-4 w-4 shrink-0" />
+						<span className="shrink-0">Добавить альбом</span>
 					</Button>
 					<Button
-						className="bg-purple-600 hover:bg-purple-700"
+						className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto min-h-11 shrink-0 justify-center overflow-visible whitespace-normal sm:whitespace-nowrap px-4"
 						onClick={() => { clearError(); setIsJamendoOpen(true); }}
 					>
-						<Radio className="mr-2 h-4 w-4" />
-						Импорт из Jamendo
+						<Radio className="h-4 w-4 shrink-0" />
+						<span className="shrink-0">Импорт из Jamendo</span>
 					</Button>
 				</div>
+			</div>
 
+			<ScrollArea className="flex-1 min-h-0 min-w-0 touch-pan-y">
+				<div className="p-4 sm:p-6 pb-8 space-y-8 max-w-[1600px] mx-auto w-full min-w-0">
 				{/* All Songs list */}
 				<div>
-					<h2 className="text-xl font-bold mb-4">Все треки ({allSongs.length})</h2>
+					<h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Все треки ({allSongs.length})</h2>
 					<div className="space-y-2">
 						{allSongs.length === 0 && (
 							<p className="text-zinc-500 text-sm px-1">Треков пока нет</p>
@@ -478,41 +481,43 @@ const AdminPage = () => {
 						{allSongs.map((song) => (
 							<div
 								key={song.id}
-								className="flex items-center justify-between py-2 px-3 rounded-lg bg-zinc-800 hover:bg-zinc-700/60 transition-colors"
+								className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between py-3 px-3 rounded-lg bg-zinc-800 hover:bg-zinc-700/60 transition-colors overflow-hidden"
 							>
-								<div className="flex items-center gap-3 min-w-0">
-									<img
-										src={song.image_url || "/album-placeholder.png"}
+								<div className="flex items-start gap-3 min-w-0 flex-1">
+									<TrackCoverImg
+										src={song.image_url}
 										alt=""
-										className="w-10 h-10 object-cover rounded flex-shrink-0"
+										className="w-11 h-11 object-cover rounded shrink-0 mt-0.5"
 									/>
-									<div className="min-w-0">
-										<p className="font-medium truncate text-white">{song.title}</p>
-										<p className="text-xs text-zinc-400 truncate">
+									<div className="min-w-0 flex-1">
+										<p className="font-medium text-white break-words sm:truncate">{song.title}</p>
+										<p className="text-xs text-zinc-400 mt-0.5 break-words">
 											{song.artist}
 											{song.album_name ? ` · ${song.album_name}` : " · Без альбома"}
 											{" · "}{song.duration} сек
 										</p>
 									</div>
 								</div>
-								<div className="flex gap-1 flex-shrink-0 ml-2">
+								<div className="flex gap-2 shrink-0 w-full sm:w-auto justify-stretch sm:justify-end pt-1 sm:pt-0 border-t border-zinc-700/50 sm:border-0">
 									<Button
 										size="sm"
 										variant="ghost"
-										className="h-8 w-8 p-0 text-zinc-400 hover:text-white"
+										className="flex-1 sm:flex-initial min-h-10 h-auto py-2 px-3 sm:h-8 sm:w-8 sm:min-w-8 sm:p-0 text-zinc-300 hover:text-white hover:bg-zinc-700/80"
 										title="Редактировать"
 										onClick={() => openEditSong(song)}
 									>
-										<Pencil className="h-3.5 w-3.5" />
+										<Pencil className="h-4 w-4 shrink-0" />
+										<span className="ml-2 text-xs sm:sr-only">Правка</span>
 									</Button>
 									<Button
 										size="sm"
 										variant="ghost"
-										className="h-8 w-8 p-0 text-red-400 hover:bg-red-900/30 hover:text-red-300"
+										className="flex-1 sm:flex-initial min-h-10 h-auto py-2 px-3 sm:h-8 sm:w-8 sm:min-w-8 sm:p-0 text-red-400 hover:bg-red-900/30 hover:text-red-200"
 										title="Удалить"
 										onClick={() => setDeleteConfirm({ type: "song", id: song.id, title: song.title })}
 									>
-										<Trash2 className="h-3.5 w-3.5" />
+										<Trash2 className="h-4 w-4 shrink-0" />
+										<span className="ml-2 text-xs sm:sr-only">Удалить</span>
 									</Button>
 								</div>
 							</div>
@@ -522,37 +527,46 @@ const AdminPage = () => {
 
 				{/* Albums list */}
 				<div>
-					<h2 className="text-xl font-bold mb-4">Альбомы ({albums.length})</h2>
+					<h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Альбомы ({albums.length})</h2>
 						<div className="space-y-4">
 							{albums.map((album) => (
-								<Card key={album.id} className="bg-zinc-800 border-zinc-700">
-									<CardContent className="p-4">
-										<div className="flex gap-4">
-											<img
-												src={album.image_url || "/album-placeholder.png"}
+								<Card key={album.id} className="bg-zinc-800 border-zinc-700 overflow-hidden">
+									<CardContent className="p-3 sm:p-4">
+										<div className="flex flex-col sm:flex-row gap-4">
+											<TrackCoverImg
+												src={album.image_url}
 												alt={album.title}
-												className="w-24 h-24 object-cover rounded flex-shrink-0"
+												className="w-full max-w-[12rem] h-48 sm:h-24 sm:w-24 object-cover rounded mx-auto sm:mx-0 shrink-0"
 											/>
-											<div className="flex-1 min-w-0">
-												<h3 className="font-semibold truncate">{album.title}</h3>
-												<p className="text-sm text-zinc-400 truncate">{album.artist}</p>
+											<div className="flex-1 min-w-0 text-center sm:text-left">
+												<h3 className="font-semibold break-words sm:truncate">{album.title}</h3>
+												<p className="text-sm text-zinc-400 break-words sm:truncate mt-0.5">{album.artist}</p>
 												<p className="text-xs text-zinc-500">{album.release_year}</p>
 												<p className="text-xs text-zinc-500">{album.songs?.length ?? 0} треков</p>
-												<div className="flex gap-2 mt-2 flex-wrap">
-													<Button size="sm" variant="outline" className="border-zinc-600" onClick={() => openEditAlbum(album)}>
-														<Pencil className="h-3 w-3 mr-1" />Изменить
+												<div className="flex flex-col sm:flex-row gap-2 mt-2 sm:flex-wrap sm:justify-start">
+													<Button size="sm" variant="outline" className="border-zinc-600 w-full sm:w-auto min-h-9 shrink-0 justify-center overflow-visible whitespace-normal sm:whitespace-nowrap" onClick={() => openEditAlbum(album)}>
+														<Pencil className="h-3 w-3 mr-1 shrink-0" />
+														<span>Изменить</span>
 													</Button>
 													<Button
 														size="sm"
 														variant="outline"
-														className="border-red-600 text-red-400 hover:bg-red-900/30"
+														className="border-red-600 text-red-400 hover:bg-red-900/30 w-full sm:w-auto min-h-9 shrink-0 justify-center overflow-visible whitespace-normal sm:whitespace-nowrap"
 														onClick={() => setDeleteConfirm({ type: "album", id: album.id, title: album.title })}
 													>
-														<Trash2 className="h-3 w-3 mr-1" />Удалить
+														<Trash2 className="h-3 w-3 mr-1 shrink-0" />
+														<span>Удалить</span>
 													</Button>
 													{(album.songs?.length ?? 0) > 0 && (
-														<Button size="sm" variant="ghost" onClick={() => toggleAlbumExpand(album.id)}>
+														<Button
+															size="sm"
+															variant="ghost"
+															className="w-full sm:w-auto min-h-9 shrink-0 justify-center gap-1"
+															onClick={() => toggleAlbumExpand(album.id)}
+															aria-expanded={expandedAlbums.has(album.id)}
+														>
 															{expandedAlbums.has(album.id) ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+															<span className="text-xs sm:inline">Треки ({album.songs?.length ?? 0})</span>
 														</Button>
 													)}
 												</div>
@@ -562,15 +576,15 @@ const AdminPage = () => {
 										{expandedAlbums.has(album.id) && (
 											<div className="mt-4 pt-4 border-t border-zinc-700 space-y-2">
 												{(album.songs ?? []).map((song) => (
-													<div key={song.id} className="flex items-center justify-between py-2 px-3 rounded bg-zinc-900">
-														<div className="flex items-center gap-3 min-w-0">
-															<img src={song.image_url || "/album-placeholder.png"} alt="" className="w-10 h-10 object-cover rounded flex-shrink-0" />
+													<div key={song.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between py-2.5 px-3 rounded bg-zinc-900">
+														<div className="flex items-center gap-3 min-w-0 flex-1">
+															<TrackCoverImg src={song.image_url} alt="" className="w-10 h-10 object-cover rounded shrink-0" />
 															<div className="min-w-0">
 																<p className="font-medium truncate">{song.title}</p>
-																<p className="text-xs text-zinc-500 truncate">{song.artist} · {song.duration} сек</p>
+																<p className="text-xs text-zinc-500 line-clamp-2 sm:truncate">{song.artist} · {song.duration} сек</p>
 															</div>
 														</div>
-														<div className="flex gap-1 flex-shrink-0">
+														<div className="flex gap-1 shrink-0 justify-end">
 															<Button size="sm" variant="ghost" onClick={() => openEditSong(song)}>
 																<Pencil className="h-3 w-3" />
 															</Button>
@@ -597,7 +611,7 @@ const AdminPage = () => {
 
 			{/* === Create Album Dialog === */}
 			<Dialog open={isAlbumDialogOpen} onOpenChange={(open) => { setIsAlbumDialogOpen(open); if (!open) clearError(); }}>
-				<DialogContent>
+				<DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-lg max-h-[90dvh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>Новый альбом</DialogTitle>
 					</DialogHeader>
@@ -644,7 +658,7 @@ const AdminPage = () => {
 
 			{/* === Create Song Dialog === */}
 			<Dialog open={isSongDialogOpen} onOpenChange={(open) => { setIsSongDialogOpen(open); if (!open) clearError(); }}>
-				<DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+				<DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[90dvh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>Новый трек</DialogTitle>
 					</DialogHeader>
@@ -718,7 +732,7 @@ const AdminPage = () => {
 
 			{/* === Edit Album Dialog === */}
 			<Dialog open={isEditAlbumDialogOpen} onOpenChange={(open) => { setIsEditAlbumDialogOpen(open); if (!open) clearError(); }}>
-				<DialogContent>
+				<DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-lg max-h-[90dvh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>Редактировать альбом</DialogTitle>
 					</DialogHeader>
@@ -762,7 +776,7 @@ const AdminPage = () => {
 
 			{/* === Edit Song Dialog === */}
 			<Dialog open={isEditSongDialogOpen} onOpenChange={(open) => { setIsEditSongDialogOpen(open); if (!open) clearError(); }}>
-				<DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+				<DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[90dvh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>Редактировать трек</DialogTitle>
 					</DialogHeader>
@@ -834,7 +848,7 @@ const AdminPage = () => {
 
 			{/* === Delete Confirmation === */}
 			<Dialog open={!!deleteConfirm} onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}>
-				<DialogContent>
+				<DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-md">
 					<DialogHeader>
 						<DialogTitle>Подтверждение удаления</DialogTitle>
 					</DialogHeader>
@@ -847,10 +861,11 @@ const AdminPage = () => {
 							)}
 						</p>
 					)}
-					<DialogFooter className="gap-2 mt-2">
-						<Button variant="outline" onClick={() => setDeleteConfirm(null)}>Отмена</Button>
+					<DialogFooter className="gap-2 mt-2 flex-col-reverse sm:flex-row sm:justify-end">
+						<Button variant="outline" className="w-full sm:w-auto" onClick={() => setDeleteConfirm(null)}>Отмена</Button>
 						<Button
 							variant="destructive"
+							className="w-full sm:w-auto"
 							onClick={() => {
 								if (deleteConfirm?.type === "album") handleDeleteAlbum();
 								else handleDeleteSong();

@@ -67,8 +67,9 @@ if not ADMIN_EMAILS:
 # ──────────────────────────────────────────────
 # client_id для Jamendo API (бесплатно для некоммерческих проектов).
 # Зарегистрировать приложение и получить свой ключ: https://devportal.jamendo.com
-# b6747d04 — публичный демо-ключ для разработки и тестирования.
-JAMENDO_CLIENT_ID = os.getenv("JAMENDO_CLIENT_ID", "b6747d04")
+# Демо-ключи Jamendo часто упираются в лимиты; свой ключ: https://devportal.jamendo.com
+# Значение совпадает с дефолтом в docker-compose.yml.
+JAMENDO_CLIENT_ID = os.getenv("JAMENDO_CLIENT_ID", "8fcd3124")
 
 # ──────────────────────────────────────────────
 # Кэш рекомендаций

@@ -17,6 +17,7 @@ from uuid import UUID
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.config import JAMENDO_CLIENT_ID
@@ -78,16 +79,61 @@ def _get_imported_jamendo_ids(db: Session) -> set[str]:
     """Вернуть set Jamendo trackid всех уже импортированных треков из БД."""
     rows = (
         db.query(Track.file_url)
-        .filter(Track.file_url.like("%prod-1.storage.jamendo.com%"))
+        .filter(
+            or_(
+                Track.file_url.like("%jamendo%"),
+                Track.file_url.like("%trackid=%"),
+            )
+        )
         .all()
     )
     return {_extract_jamendo_id(row[0]) for row in rows} - {None}
 
 
+def _collect_unimported_tracks(
+    base_params: dict,
+    extra: dict,
+    imported_ids: set[str],
+    need: int,
+    start_offset: int = 0,
+) -> list[JamendoTrack]:
+    """
+    Запрашивать страницы Jamendo, пока не наберётся need треков, ещё не в библиотеке.
+
+    Без этого после десятков импортов «топ по популярности» целиком совпадает с уже
+    импортированным — первая страница API даёт 0 строк после фильтра.
+    """
+    # Jamendo: до 100 треков на запрос (см. документацию v3.0 /tracks)
+    page_size = min(max(need * 2, 25), 100)
+    collected: list[JamendoTrack] = []
+    seen_ids: set[str] = set()
+    off = start_offset
+    max_pages = 25
+    max_offset = start_offset + 3000
+
+    for _ in range(max_pages):
+        params = {**base_params, **extra, "limit": page_size, "offset": off}
+        batch = _fetch_jamendo_tracks(params)
+        if not batch:
+            break
+        for t in batch:
+            if t.jamendo_id in seen_ids:
+                continue
+            seen_ids.add(t.jamendo_id)
+            if t.jamendo_id not in imported_ids:
+                collected.append(t)
+            if len(collected) >= need:
+                return collected[:need]
+        off += page_size
+        if off > max_offset:
+            break
+    return collected[:need]
+
+
 def _fetch_jamendo_tracks(params: dict) -> list[JamendoTrack]:
     """Вспомогательная функция: делает запрос к Jamendo API и парсит результаты."""
     try:
-        with httpx.Client(timeout=10.0) as client:
+        with httpx.Client(timeout=20.0) as client:
             resp = client.get(f"{JAMENDO_API_BASE}/tracks/", params=params)
             resp.raise_for_status()
     except httpx.TimeoutException:
@@ -101,7 +147,21 @@ def _fetch_jamendo_tracks(params: dict) -> list[JamendoTrack]:
             detail=f"Ошибка запроса к Jamendo: {e}",
         )
 
-    results = resp.json().get("results", [])
+    payload = resp.json()
+    hdr = payload.get("headers") or {}
+    warnings = (hdr.get("warnings") or "").strip()
+    if warnings:
+        wlow = warnings.lower()
+        if "usage limits" in wlow or "block your access" in wlow:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=(
+                    f"Jamendo API: {warnings} "
+                    "Укажите свой JAMENDO_CLIENT_ID в .env (https://devportal.jamendo.com)."
+                ),
+            )
+
+    results = payload.get("results") or []
     tracks = []
     for t in results:
         audio_url = t.get("audio", "")
@@ -124,8 +184,8 @@ def _fetch_jamendo_tracks(params: dict) -> list[JamendoTrack]:
 def search_jamendo(
     q: str = Query("", description="Поисковый запрос (название трека или имя артиста)"),
     tags: str = Query("", description="Теги жанров через пробел: rock pop electronic"),
-    limit: int = Query(20, ge=1, le=50),
-    offset: int = Query(0, ge=0),
+    limit: int = Query(40, ge=1, le=100),
+    offset: int = Query(0, ge=0, le=5000),
     db: Session = Depends(get_db),
 ):
     """
@@ -139,15 +199,9 @@ def search_jamendo(
     1. По имени артиста (artist_name) — точный поиск
     2. Фолбэк: свободный текст (название трека, альбом, теги)
     """
-    # Увеличиваем limit для Jamendo, чтобы после фильтрации уже импортированных
-    # осталось достаточно треков для показа
-    fetch_limit = min(limit * 3, 50)
-
     base_params = {
         "client_id": JAMENDO_CLIENT_ID,
         "format": "json",
-        "limit": fetch_limit,
-        "offset": offset,
         "audioformat": "mp31",
         "imagesize": 300,
         "order": "popularity_month",
@@ -157,20 +211,19 @@ def search_jamendo(
     if tags:
         base_params["fuzzytags"] = tags.strip()
 
-    if q:
-        # Шаг 1: поиск по имени артиста
-        tracks = _fetch_jamendo_tracks({**base_params, "artist_name": q.strip()})
-        if not tracks:
-            # Шаг 2: фолбэк — свободный текстовый поиск
-            tracks = _fetch_jamendo_tracks({**base_params, "search": q.strip()})
-    else:
-        tracks = _fetch_jamendo_tracks(base_params)
-
-    # Исключаем уже импортированные треки
     imported_ids = _get_imported_jamendo_ids(db)
-    filtered = [t for t in tracks if t.jamendo_id not in imported_ids]
 
-    return filtered[:limit]
+    if q:
+        tracks = _collect_unimported_tracks(
+            base_params, {"artist_name": q.strip()}, imported_ids, limit, offset
+        )
+        if not tracks:
+            tracks = _collect_unimported_tracks(
+                base_params, {"search": q.strip()}, imported_ids, limit, offset
+            )
+        return tracks
+
+    return _collect_unimported_tracks(base_params, {}, imported_ids, limit, offset)
 
 
 def _download_image(url: str) -> str | None:
@@ -179,8 +232,12 @@ def _download_image(url: str) -> str | None:
         return None
     try:
         IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-        with httpx.Client(timeout=10.0) as client:
-            resp = client.get(url, follow_redirects=True)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (compatible; SpotifyClone/1.0; +https://jamendo.com)",
+            "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+        }
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.get(url, follow_redirects=True, headers=headers)
             resp.raise_for_status()
         content_type = resp.headers.get("content-type", "image/jpeg").lower()
         ext = ".png" if "png" in content_type else ".webp" if "webp" in content_type else ".jpg"

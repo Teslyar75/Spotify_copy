@@ -6,6 +6,7 @@ import { useArtistStore } from "@/stores/useArtistStore";
 import { useLibraryStore } from "@/stores/useLibraryStore";
 import { Skeleton } from "@/components/skeletons/Skeleton";
 import { Link } from "react-router-dom";
+import { TrackCoverImg } from "@/components/TrackCoverImg";
 
 interface SectionGridProps {
 	title: string;
@@ -64,8 +65,8 @@ const SectionGrid = ({ title, songs, isLoading }: SectionGridProps) => {
 							className="group relative rounded-lg bg-white/5 p-3 transition-all duration-200 hover:bg-white/10 sm:p-4 cursor-pointer"
 						>
 							<div className="relative mb-3 sm:mb-4">
-								<img
-									src={song.image_url || "/album-placeholder.png"}
+								<TrackCoverImg
+									src={song.image_url}
 									alt={song.title}
 									className="aspect-square w-full rounded-lg object-cover shadow-spotify-card"
 								/>
