@@ -34,7 +34,7 @@ const LoginPage = () => {
 					id: user_id,
 					username,
 					email,
-					avatar_url: avatar_url || undefined,
+					avatar_url: avatar_url || null,
 				},
 			});
 			navigate("/");

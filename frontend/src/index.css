@@ -88,3 +88,12 @@
 .page-transition-enter {
 	animation: page-enter 0.25s ease-out forwards;
 }
+
+/* Hide scrollbar logic */
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;
+}
+.scrollbar-hide {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}

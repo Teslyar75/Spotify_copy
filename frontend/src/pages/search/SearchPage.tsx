@@ -176,32 +176,34 @@ const SearchPage = () => {
 								<h2 className="mb-3 text-base font-bold text-white sm:text-lg">
 									Browse by genre
 								</h2>
-								<div className="flex flex-wrap gap-2 sm:gap-3">
-									<Button
-										variant="ghost"
-										className={`rounded-full px-4 text-sm sm:px-5 ${
-											!selectedGenre ? "bg-spotify-green text-black hover:bg-spotify-green-hover" : "bg-white/10 text-white hover:bg-white/20"
-										}`}
-										onClick={() => setSelectedGenre(null)}
-									>
-										All
-									</Button>
-									{["Rock", "Pop", "Jazz", "Classical", "Electronic", "Hip-Hop", "R&B", "Ambient"].map((genre) => {
-										const genreValue = GENRE_MAP[genre] ?? genre.toLowerCase();
-										const isActive = selectedGenre === genreValue;
-										return (
-											<Button
-												key={genre}
-												variant="ghost"
-												className={`rounded-full px-4 text-sm sm:px-5 ${
-													isActive ? "bg-spotify-green text-black hover:bg-spotify-green-hover" : "bg-white/10 text-white hover:bg-white/20"
-												}`}
-												onClick={() => handleGenreClick(genre)}
-											>
-												{genre}
-											</Button>
-										);
-									})}
+								<div className="relative">
+									<div className="flex overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap gap-2 sm:gap-3 touch-pan-x">
+										<Button
+											variant="ghost"
+											className={`flex-shrink-0 rounded-full px-4 text-sm sm:px-5 ${
+												!selectedGenre ? "bg-spotify-green text-black hover:bg-spotify-green-hover" : "bg-white/10 text-white hover:bg-white/20"
+											}`}
+											onClick={() => setSelectedGenre(null)}
+										>
+											All
+										</Button>
+										{["Rock", "Pop", "Jazz", "Classical", "Electronic", "Hip-Hop", "R&B", "Ambient"].map((genre) => {
+											const genreValue = GENRE_MAP[genre] ?? genre.toLowerCase();
+											const isActive = selectedGenre === genreValue;
+											return (
+												<Button
+													key={genre}
+													variant="ghost"
+													className={`flex-shrink-0 rounded-full px-4 text-sm sm:px-5 ${
+														isActive ? "bg-spotify-green text-black hover:bg-spotify-green-hover" : "bg-white/10 text-white hover:bg-white/20"
+													}`}
+													onClick={() => handleGenreClick(genre)}
+												>
+													{genre}
+												</Button>
+											);
+										})}
+									</div>
 								</div>
 							</div>
 
@@ -224,40 +226,37 @@ const SearchPage = () => {
 													className="group flex cursor-pointer items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-white/10 sm:gap-4 sm:p-3"
 													onClick={() => setCurrentSong(song)}
 												>
-													<span className="w-5 text-xs text-spotify-text-muted sm:w-6 sm:text-sm">{i + 1}</span>
-													<img
-														src={song.image_url || "/album-placeholder.png"}
-														alt=""
-														className="h-10 w-10 rounded object-cover sm:h-12 sm:w-12"
-													/>
+													<div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center sm:h-12 sm:w-12">
+														<img
+															src={song.image_url || "/album-placeholder.png"}
+															alt=""
+															className="h-full w-full rounded object-cover group-hover:opacity-30"
+														/>
+														<Play
+															className="absolute hidden h-5 w-5 text-white group-hover:block"
+															fill="currentColor"
+														/>
+													</div>
 													<div className="min-w-0 flex-1">
 														<p className="truncate text-sm font-medium text-white sm:text-base">{song.title}</p>
 														<p className="truncate text-xs text-spotify-text-muted sm:text-sm">{song.artist}</p>
 													</div>
-													<button
-														onClick={(e) => {
-															e.stopPropagation();
-															isSongLiked(song.id) ? unlikeSong(song.id) : likeSong(song);
-														}}
-														className={`transition-transform hover:scale-110 ${
-															isSongLiked(song.id) ? "" : "opacity-0 group-hover:opacity-100"
-														}`}
-													>
-														<Heart
-															className={`h-4 w-4 ${isSongLiked(song.id) ? "text-spotify-green" : "text-white/50 hover:text-white"}`}
-															fill={isSongLiked(song.id) ? "currentColor" : "none"}
-														/>
-													</button>
-													<Button
-														size="icon"
-														className="h-9 w-9 rounded-full bg-spotify-green opacity-0 transition-opacity group-hover:opacity-100 hover:bg-spotify-green-hover sm:h-10 sm:w-10"
-														onClick={(e) => {
-															e.stopPropagation();
-															setCurrentSong(song);
-														}}
-													>
-														<Play className="ml-0.5 h-4 w-4 text-black sm:h-5 sm:w-5" fill="currentColor" />
-													</Button>
+													<div className="flex items-center gap-2">
+														<button
+															onClick={(e) => {
+																e.stopPropagation();
+																isSongLiked(song.id) ? unlikeSong(song.id) : likeSong(song);
+															}}
+															className={`p-2 transition-transform hover:scale-110 flex items-center justify-center ${
+																isSongLiked(song.id) ? "opacity-100" : "opacity-100"
+															}`}
+														>
+															<Heart
+																className={`h-5 w-5 ${isSongLiked(song.id) ? "text-spotify-green" : "text-white/50 hover:text-white"}`}
+																fill={isSongLiked(song.id) ? "currentColor" : "none"}
+															/>
+														</button>
+													</div>
 												</div>
 											))}
 										</div>
@@ -281,40 +280,37 @@ const SearchPage = () => {
 														className="group flex cursor-pointer items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-white/10 sm:gap-4 sm:p-3"
 														onClick={() => setCurrentSong(song)}
 													>
-														<span className="w-5 text-xs text-spotify-text-muted sm:w-6 sm:text-sm">{i + 1}</span>
-														<img
-															src={song.image_url || "/album-placeholder.png"}
-															alt=""
-															className="h-10 w-10 rounded object-cover sm:h-12 sm:w-12"
-														/>
+														<div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center sm:h-12 sm:w-12">
+															<img
+																src={song.image_url || "/album-placeholder.png"}
+																alt=""
+																className="h-full w-full rounded object-cover group-hover:opacity-30"
+															/>
+															<Play
+																className="absolute hidden h-5 w-5 text-white group-hover:block"
+																fill="currentColor"
+															/>
+														</div>
 														<div className="min-w-0 flex-1">
 															<p className="truncate text-sm font-medium text-white sm:text-base">{song.title}</p>
 															<p className="truncate text-xs text-spotify-text-muted sm:text-sm">{song.artist}</p>
 														</div>
-														<button
-															onClick={(e) => {
-																e.stopPropagation();
-																isSongLiked(song.id) ? unlikeSong(song.id) : likeSong(song);
-															}}
-															className={`transition-transform hover:scale-110 ${
-																isSongLiked(song.id) ? "" : "opacity-0 group-hover:opacity-100"
-															}`}
-														>
-															<Heart
-																className={`h-4 w-4 ${isSongLiked(song.id) ? "text-spotify-green" : "text-white/50 hover:text-white"}`}
-																fill={isSongLiked(song.id) ? "currentColor" : "none"}
-															/>
-														</button>
-														<Button
-															size="icon"
-															className="h-9 w-9 rounded-full bg-spotify-green opacity-0 transition-opacity group-hover:opacity-100 hover:bg-spotify-green-hover sm:h-10 sm:w-10"
-															onClick={(e) => {
-																e.stopPropagation();
-																setCurrentSong(song);
-															}}
-														>
-															<Play className="ml-0.5 h-4 w-4 text-black sm:h-5 sm:w-5" fill="currentColor" />
-														</Button>
+														<div className="flex items-center gap-2">
+															<button
+																onClick={(e) => {
+																	e.stopPropagation();
+																	isSongLiked(song.id) ? unlikeSong(song.id) : likeSong(song);
+																}}
+																className={`p-2 transition-transform hover:scale-110 flex items-center justify-center ${
+																	isSongLiked(song.id) ? "opacity-100" : "opacity-100"
+																}`}
+															>
+																<Heart
+																	className={`h-5 w-5 ${isSongLiked(song.id) ? "text-spotify-green" : "text-white/50 hover:text-white"}`}
+																	fill={isSongLiked(song.id) ? "currentColor" : "none"}
+																/>
+															</button>
+														</div>
 													</div>
 												))}
 											</div>
@@ -385,15 +381,17 @@ const SearchPage = () => {
 												className="group flex cursor-pointer items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-white/10 sm:gap-4 sm:p-3"
 												onClick={() => setCurrentSong(song)}
 											>
-												<span className="w-5 text-xs text-spotify-text-muted sm:w-6 sm:text-sm">
-													{i + 1}
-												</span>
-
-												<img
-													src={song.image_url || "/album-placeholder.png"}
-													alt=""
-													className="h-10 w-10 rounded object-cover sm:h-12 sm:w-12"
-												/>
+												<div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center sm:h-12 sm:w-12">
+													<img
+														src={song.image_url || "/album-placeholder.png"}
+														alt=""
+														className="h-full w-full rounded object-cover group-hover:opacity-30"
+													/>
+													<Play
+														className="absolute hidden h-5 w-5 text-white group-hover:block"
+														fill="currentColor"
+													/>
+												</div>
 
 												<div className="min-w-0 flex-1">
 													<p className="truncate text-sm font-medium text-white sm:text-base">
@@ -404,34 +402,22 @@ const SearchPage = () => {
 													</p>
 												</div>
 
-												<button
-													onClick={(e) => {
-														e.stopPropagation();
-														isSongLiked(song.id) ? unlikeSong(song.id) : likeSong(song);
-													}}
-													className={`transition-transform hover:scale-110 ${
-														isSongLiked(song.id) ? "" : "opacity-0 group-hover:opacity-100"
-													}`}
-												>
-													<Heart
-														className={`h-4 w-4 ${isSongLiked(song.id) ? "text-spotify-green" : "text-white/50 hover:text-white"}`}
-														fill={isSongLiked(song.id) ? "currentColor" : "none"}
-													/>
-												</button>
-
-												<Button
-													size="icon"
-													className="h-9 w-9 rounded-full bg-spotify-green opacity-0 transition-opacity group-hover:opacity-100 hover:bg-spotify-green-hover sm:h-10 sm:w-10"
-													onClick={(e) => {
-														e.stopPropagation();
-														setCurrentSong(song);
-													}}
-												>
-													<Play
-														className="ml-0.5 h-4 w-4 text-black sm:h-5 sm:w-5"
-														fill="currentColor"
-													/>
-												</Button>
+												<div className="flex items-center gap-2">
+													<button
+														onClick={(e) => {
+															e.stopPropagation();
+															isSongLiked(song.id) ? unlikeSong(song.id) : likeSong(song);
+														}}
+														className={`p-2 transition-transform hover:scale-110 flex items-center justify-center ${
+															isSongLiked(song.id) ? "opacity-100" : "opacity-100"
+														}`}
+													>
+														<Heart
+															className={`h-5 w-5 ${isSongLiked(song.id) ? "text-spotify-green" : "text-white/50 hover:text-white"}`}
+															fill={isSongLiked(song.id) ? "currentColor" : "none"}
+														/>
+													</button>
+												</div>
 											</div>
 										))}
 									</div>

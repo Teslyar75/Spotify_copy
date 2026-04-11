@@ -2,8 +2,9 @@ import axios, { InternalAxiosRequestConfig } from "axios";
 
 const TOKEN_KEY = "spotify_tokens";
 
+const API_URL = "http://localhost:8080/api";
 export const axiosInstance = axios.create({
-	baseURL: "/api",
+	baseURL: API_URL,
 	withCredentials: true,
 });
 
