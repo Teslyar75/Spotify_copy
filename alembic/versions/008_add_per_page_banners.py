@@ -21,6 +21,9 @@ def upgrade() -> None:
     # Добавляем JSON поле для 4 баннеров (home, search, library, player)
     op.add_column('skins', sa.Column('banners', postgresql.JSONB, nullable=True))
     
+    # ON CONFLICT (name) WHERE is_preset below needs a matching unique partial index
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_skins_preset_name ON skins (name) WHERE is_preset = true")
+    
     # Upsert всех preset скинов с 4 баннерами для каждого
     # Используем ON CONFLICT для обновления существующих и вставки новых
     op.execute("""
@@ -85,4 +88,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.execute("DROP INDEX IF EXISTS uq_skins_preset_name")
     op.drop_column('skins', 'banners')

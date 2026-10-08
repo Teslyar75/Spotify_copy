@@ -55,6 +55,7 @@ class SkinResponse(BaseModel):
     banner_url: Optional[str]
     background_url: Optional[str]
     thumbnail_url: Optional[str]
+    banners: Optional[dict] = None
     button_style: str
     accent_color: Optional[str]
     accent_secondary: Optional[str]
@@ -369,6 +370,91 @@ def upload_skin_image(
         "accent_color": dominant,
         "accent_secondary": secondary,
     }
+
+
+@router.post("/create-custom", response_model=SkinResponse)
+def create_custom_skin(
+    name: str,
+    home: Optional[UploadFile] = File(None),
+    search: Optional[UploadFile] = File(None),
+    library: Optional[UploadFile] = File(None),
+    player: Optional[UploadFile] = File(None),
+    user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a custom 4-banner skin from up to 4 uploaded photos.
+    
+    Each photo is center-cropped to 1200x400 WebP (<150 KB).
+    Accent colors are extracted from the first provided photo.
+    If fewer than 4 photos, reuse in order: home -> search -> library -> player.
+    
+    Returns the created skin saved to the user's library.
+    """
+    _ensure_dirs()
+    
+    # Collect uploaded files in order
+    photos = []
+    for slot_file in [home, search, library, player]:
+        if slot_file and slot_file.filename:
+            data = slot_file.file.read()
+            if not validate_image_upload(data, max_size_mb=10):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid image in {slot_file.filename} or file too large (max 10MB)"
+                )
+            photos.append(data)
+    
+    if not photos:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one photo required"
+        )
+    
+    # Process first photo for accent colors
+    from app.image_processing import resize_and_crop_image, get_dominant_color, get_secondary_color, fix_exif_orientation
+    from PIL import Image
+    import io as io_module
+    
+    original_img = Image.open(io_module.BytesIO(photos[0]))
+    original_img = fix_exif_orientation(original_img)
+    dominant = get_dominant_color(original_img)
+    secondary = get_secondary_color(original_img, dominant)
+    
+    # Fallback reuse: if fewer than 4 photos, cycle through available
+    while len(photos) < 4:
+        photos.append(photos[len(photos) % len(photos)])
+    
+    # Process each photo to 1200x400 WebP
+    file_id = uuid.uuid4().hex
+    banner_urls = {}
+    slot_names = ["home", "search", "library", "player"]
+    
+    for idx, (slot_name, photo_data) in enumerate(zip(slot_names, photos)):
+        banner_bytes, _ = resize_and_crop_image(photo_data, 1200, 400, quality=85, output_format="WEBP")
+        filename = f"{file_id}-{slot_name}.webp"
+        (SKINS_DIR / filename).write_bytes(banner_bytes)
+        banner_urls[slot_name] = f"/media/skins/{filename}"
+    
+    # Create skin in DB
+    new_skin = Skin(
+        name=name,
+        owner_id=user_id,
+        button_style="round",
+        accent_color=dominant,
+        accent_secondary=secondary,
+        animation_type="none",
+        is_public=False,
+        is_preset=False,
+        banners=banner_urls,
+        banner_url=banner_urls["home"],  # fallback
+        thumbnail_url=banner_urls["home"]
+    )
+    db.add(new_skin)
+    db.commit()
+    db.refresh(new_skin)
+    
+    return new_skin
 
 
 @router.post("/activate", response_model=SkinResponse)

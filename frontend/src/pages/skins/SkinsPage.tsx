@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSkinStore } from "@/stores/useSkinStore";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
 import { Check, Upload, X } from "lucide-react";
 
@@ -21,10 +22,15 @@ const SkinsPage = () => {
 	} = useSkinStore();
 	
 	const [selectedTab, setSelectedTab] = useState<"library" | "market">("library");
-	const [uploadingImage, setUploadingImage] = useState(false);
-	const [showUploadModal, setShowUploadModal] = useState(false);
+	const [showCreateModal, setShowCreateModal] = useState(false);
 	const [newSkinName, setNewSkinName] = useState("");
-	const [uploadedImageData, setUploadedImageData] = useState<any>(null);
+	const [photoSlots, setPhotoSlots] = useState<{
+		home: File | null;
+		search: File | null;
+		library: File | null;
+		player: File | null;
+	}>({ home: null, search: null, library: null, player: null });
+	const [creatingCustomSkin, setCreatingCustomSkin] = useState(false);
 	
 	useEffect(() => {
 		fetchActiveSkin();
@@ -58,74 +64,44 @@ const SkinsPage = () => {
 		}
 	};
 	
-	const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-		
-		if (!user) {
-			toast.error("Войдите, чтобы загружать фото");
-			return;
-		}
-		
-		setUploadingImage(true);
-		try {
-			const data = await uploadSkinImage(file);
-			setUploadedImageData(data);
-			setShowUploadModal(true);
-		} catch (error: any) {
-			toast.error(error.response?.data?.detail || "Ошибка загрузки изображения");
-		} finally {
-			setUploadingImage(false);
-		}
+	const handleSlotPhotoChange = (slot: "home" | "search" | "library" | "player", file: File | null) => {
+		setPhotoSlots(prev => ({ ...prev, [slot]: file }));
 	};
 	
-	const handleCreateSkin = async () => {
-		if (!uploadedImageData || !newSkinName) {
+	const handleCreateCustomSkin = async () => {
+		if (!newSkinName.trim()) {
 			toast.error("Введите название скина");
 			return;
 		}
 		
+		const providedPhotos = Object.values(photoSlots).filter(Boolean);
+		if (providedPhotos.length === 0) {
+			toast.error("Загрузите хотя бы одно фото");
+			return;
+		}
+		
+		setCreatingCustomSkin(true);
 		try {
-			// Создаём скин через API
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/skins`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					"Authorization": `Bearer ${localStorage.getItem("access_token")}`
-				},
-				body: JSON.stringify({
-					name: newSkinName,
-					button_style: "round",
-					animation_type: "none",
-					is_public: false
-				})
+			const formData = new FormData();
+			formData.append("name", newSkinName);
+			if (photoSlots.home) formData.append("home", photoSlots.home);
+			if (photoSlots.search) formData.append("search", photoSlots.search);
+			if (photoSlots.library) formData.append("library", photoSlots.library);
+			if (photoSlots.player) formData.append("player", photoSlots.player);
+			
+			const response = await axiosInstance.post("/skins/create-custom", formData, {
+				headers: { "Content-Type": "multipart/form-data" }
 			});
 			
-			if (!response.ok) throw new Error("Failed to create skin");
-			
-			const skin = await response.json();
-			
-			// Обновляем скин с изображениями
-			await fetch(`${import.meta.env.VITE_API_URL}/skins/${skin.id}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-					"Authorization": `Bearer ${localStorage.getItem("access_token")}`
-				},
-				body: JSON.stringify({
-					name: newSkinName
-				})
-			});
-			
-			// TODO: link uploaded images to skin
-			
-			toast.success("Скин создан!");
-			setShowUploadModal(false);
+			toast.success(`Скин "${response.data.name}" создан!`);
+			setShowCreateModal(false);
 			setNewSkinName("");
-			setUploadedImageData(null);
+			setPhotoSlots({ home: null, search: null, library: null, player: null });
 			await fetchMySkins();
-		} catch (error) {
-			toast.error("Ошибка создания скина");
+		} catch (error: any) {
+			toast.error(error.response?.data?.detail || "Ошибка создания скина");
+		} finally {
+			setCreatingCustomSkin(false);
 		}
 	};
 	
@@ -237,23 +213,13 @@ const SkinsPage = () => {
 				</p>
 			</div>
 			
-			{/* Upload button */}
+			{/* Create custom skin button */}
 			{user && (
 				<div className="mb-6">
-					<label className="cursor-pointer">
-						<input
-							type="file"
-							accept="image/*"
-							capture="environment"
-							className="hidden"
-							onChange={handleImageUpload}
-							disabled={uploadingImage}
-						/>
-						<Button disabled={uploadingImage} className="gap-2">
-							<Upload className="w-4 h-4" />
-							{uploadingImage ? "Загрузка..." : "Загрузить своё фото"}
-						</Button>
-					</label>
+					<Button onClick={() => setShowCreateModal(true)} className="gap-2">
+						<Upload className="w-4 h-4" />
+						Создать свой скин
+					</Button>
 				</div>
 			)}
 			
@@ -287,23 +253,15 @@ const SkinsPage = () => {
 				{selectedTab === "market" && availableSkins.map(skin => renderSkinCard(skin, false))}
 			</div>
 			
-			{/* Upload Modal */}
-			{showUploadModal && uploadedImageData && (
-				<div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-					<div className="bg-spotify-charcoal rounded-lg p-6 max-w-md w-full">
+			{/* Create Custom Skin Modal */}
+			{showCreateModal && (
+				<div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 overflow-y-auto">
+					<div className="bg-spotify-charcoal rounded-lg p-6 max-w-2xl w-full my-8">
 						<div className="flex justify-between items-center mb-4">
-							<h2 className="text-xl font-bold text-white">Создать скин</h2>
-							<button onClick={() => setShowUploadModal(false)}>
+							<h2 className="text-xl font-bold text-white">Создать свой скин</h2>
+							<button onClick={() => setShowCreateModal(false)}>
 								<X className="w-5 h-5 text-spotify-text-muted hover:text-white" />
 							</button>
-						</div>
-						
-						<div className="mb-4">
-							<img
-								src={uploadedImageData.thumbnail_url}
-								alt="Preview"
-								className="w-full rounded-lg"
-							/>
 						</div>
 						
 						<div className="mb-4">
@@ -319,29 +277,61 @@ const SkinsPage = () => {
 							/>
 						</div>
 						
-						<div className="flex gap-2 mb-4">
-							<div className="flex-1">
-								<span className="text-xs text-spotify-text-muted">Цвет 1</span>
-								<div
-									className="w-full h-8 rounded mt-1 border border-white/20"
-									style={{ backgroundColor: uploadedImageData.accent_color }}
-								/>
-							</div>
-							<div className="flex-1">
-								<span className="text-xs text-spotify-text-muted">Цвет 2</span>
-								<div
-									className="w-full h-8 rounded mt-1 border border-white/20"
-									style={{ backgroundColor: uploadedImageData.accent_secondary }}
-								/>
-							</div>
+						<p className="text-xs text-spotify-text-muted mb-4">
+							Загрузите до 4 фото (или меньше — доступные фото переиспользуются). Каждое фото будет обрезано до 1200×400.
+						</p>
+						
+						{/* 4 photo slots */}
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+							{(["home", "search", "library", "player"] as const).map((slot, idx) => {
+								const labels = { home: "Главная", search: "Поиск", library: "Библиотека", player: "Плеер" };
+								const file = photoSlots[slot];
+								return (
+									<div key={slot} className="border border-white/10 rounded-lg p-3">
+										<label className="block text-sm text-white mb-2">{labels[slot]}</label>
+										<label className="cursor-pointer block">
+											<input
+												type="file"
+												accept="image/*"
+												className="hidden"
+												onChange={(e) => {
+													const f = e.target.files?.[0];
+													handleSlotPhotoChange(slot, f || null);
+												}}
+											/>
+											<div className="bg-spotify-sidebar rounded border border-dashed border-white/20 hover:border-spotify-green transition h-24 flex items-center justify-center text-xs text-spotify-text-muted">
+												{file ? (
+													<div className="text-center">
+														<div className="text-white truncate max-w-[150px]">{file.name}</div>
+														<div className="text-[10px]">{(file.size / 1024).toFixed(0)} KB</div>
+													</div>
+												) : (
+													<div className="flex flex-col items-center gap-1">
+														<Upload className="w-4 h-4" />
+														<span>Загрузить</span>
+													</div>
+												)}
+											</div>
+										</label>
+										{file && (
+											<button
+												onClick={() => handleSlotPhotoChange(slot, null)}
+												className="text-xs text-spotify-text-muted hover:text-white mt-1"
+											>
+												Удалить
+											</button>
+										)}
+									</div>
+								);
+							})}
 						</div>
 						
 						<Button
-							onClick={handleCreateSkin}
-							disabled={!newSkinName}
+							onClick={handleCreateCustomSkin}
+							disabled={creatingCustomSkin || !newSkinName.trim() || Object.values(photoSlots).every(f => !f)}
 							className="w-full"
 						>
-							Создать скин
+							{creatingCustomSkin ? "Создание..." : "Создать скин"}
 						</Button>
 					</div>
 				</div>

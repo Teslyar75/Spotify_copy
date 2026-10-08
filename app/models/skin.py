@@ -35,6 +35,7 @@ class Skin(Base):
     banner_url = Column(String(255))  # Баннер (широкий, для хедеров)
     background_url = Column(String(255))  # Фон для now-playing screen
     thumbnail_url = Column(String(255))  # Миниатюра для карточек списка скинов
+    banners = Column(JSONB, nullable=True)  # {"home","search","library","player"} per-page banners (migration 008)
     
     # Стиль кнопок (CSS-класс)
     button_style = Column(

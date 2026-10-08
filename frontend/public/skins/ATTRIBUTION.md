@@ -18,10 +18,10 @@ All images used in skin banners are licensed for free use and redistribution.
 
 ### Cosmos
 
-- **home**: [NASA/Unsplash](https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1600) — Unsplash License (Unsplash)
-- **search**: [NASA/Unsplash](https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=1600) — Unsplash License (Unsplash)
-- **library**: [Greg Rakozy](https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?w=1600) — Unsplash License (Unsplash)
-- **player**: [NASA/Unsplash](https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600) — Unsplash License (Unsplash)
+- **home**: [Jeremy Thomas](https://images.unsplash.com/photo-1516339901601-2e1b62dc0c45?w=1600) — Unsplash License (bright nebula with stars)
+- **search**: [NASA/Bill Dunford](https://images.unsplash.com/photo-1608178398319-48f814d0750c?w=1600) — Unsplash License (colorful deep-space nebula)
+- **library**: [NASA](https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=1600) — Unsplash License (Earth from space, bright blue planet)
+- **player**: [NASA/ESA/Hubble](https://images.unsplash.com/photo-1543722530-d2c3201371e7?w=1600) — Unsplash License (spiral galaxy, bright core)
 
 ### Cosplay
 

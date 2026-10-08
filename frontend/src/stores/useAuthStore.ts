@@ -22,12 +22,25 @@ interface AuthStore {
 const TOKEN_KEY = "spotify_tokens";
 const USER_KEY = "spotify_user";
 
+// Read the saved session synchronously so guarded routes (/library, /albums/:id, ...) don't
+// redirect to /login -> / on reload/deep link before checkAuth() runs in an effect.
+const readStored = <T,>(key: string): T | null => {
+	try {
+		const raw = localStorage.getItem(key);
+		return raw ? (JSON.parse(raw) as T) : null;
+	} catch {
+		return null;
+	}
+};
+const initialTokens = readStored<AuthTokens>(TOKEN_KEY);
+const initialUser = readStored<User>(USER_KEY);
+
 export const useAuthStore = create<AuthStore>((set, get) => ({
-	user: null,
-	tokens: null,
+	user: initialUser,
+	tokens: initialTokens,
 	isLoading: false,
 	error: null,
-	isAuthenticated: false,
+	isAuthenticated: !!(initialTokens && initialUser),
 
 	login: async (data: LoginRequest) => {
 		set({ isLoading: true, error: null });

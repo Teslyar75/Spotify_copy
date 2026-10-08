@@ -64,7 +64,7 @@ const HomePage = () => {
 		<div className="relative h-[220px] min-h-[220px] sm:h-[260px] sm:min-h-[260px] md:h-[300px] md:min-h-[300px] lg:h-[332px] lg:min-h-[332px] overflow-hidden">
 			{/* Фоновое изображение */}
 			<img
-				src={activeSkin?.banner_url || "/home-header-bg.png"}
+				src={activeSkin?.banners?.home || activeSkin?.banner_url || "/home-header-bg.png"}
 				alt=""
 				className="absolute inset-0 h-full w-full object-cover object-center"
 			/>
