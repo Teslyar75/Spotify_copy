@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { useSkinStore } from "@/stores/useSkinStore";
+import { Link } from "react-router-dom";
+import { isStandardSkin, Skin, useSkinStore } from "@/stores/useSkinStore";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
-import { Check, Upload, X } from "lucide-react";
+import { Check, Lock, Pencil, Upload, X } from "lucide-react";
+import SkinBannerEditor from "./components/SkinBannerEditor";
 
 const SkinsPage = () => {
 	const { user } = useAuthStore();
@@ -15,6 +17,7 @@ const SkinsPage = () => {
 		isLoading,
 		fetchAvailableSkins,
 		fetchMySkins,
+		fetchPresetSkins,
 		fetchActiveSkin,
 		applySkin,
 		purchaseSkin,
@@ -31,12 +34,20 @@ const SkinsPage = () => {
 		player: File | null;
 	}>({ home: null, search: null, library: null, player: null });
 	const [creatingCustomSkin, setCreatingCustomSkin] = useState(false);
+	// скин, баннеры которого сейчас редактируются (id → свежая версия из стора)
+	const [editingSkinId, setEditingSkinId] = useState<string | null>(null);
+	const editingSkin: Skin | undefined = editingSkinId
+		? mySkins.find((s) => s.id === editingSkinId) || availableSkins.find((s) => s.id === editingSkinId)
+		: undefined;
 	
 	useEffect(() => {
 		fetchActiveSkin();
 		fetchAvailableSkins();
 		if (user) {
 			fetchMySkins();
+		} else {
+			// гостю показываем встроенные скины во вкладке «Моя библиотека»
+			fetchPresetSkins();
 		}
 	}, [user]);
 	
@@ -112,6 +123,9 @@ const SkinsPage = () => {
 	const renderSkinCard = (skin: any, isLibrary: boolean = false) => {
 		const isActive = activeSkin?.id === skin.id;
 		const isOwned = skinIsOwned(skin.id);
+		const preview: string | undefined = skin.banners?.home || skin.thumbnail_url;
+		const customCount: number = skin.custom_slots?.length ?? 0;
+		const editable = !isStandardSkin(skin);
 		
 		return (
 			<div
@@ -120,14 +134,14 @@ const SkinsPage = () => {
 			>
 				{/* Thumbnail/Preview */}
 				<div className="aspect-[3/2] relative bg-gradient-to-br from-spotify-sidebar to-spotify-black">
-					{skin.thumbnail_url && (
+					{preview && (
 						<img
-							src={skin.thumbnail_url}
+							src={preview}
 							alt={skin.name}
 							className="w-full h-full object-cover"
 						/>
 					)}
-					{!skin.thumbnail_url && (
+					{!preview && (
 						<div
 							className="w-full h-full flex items-center justify-center text-6xl font-bold"
 							style={{
@@ -142,6 +156,11 @@ const SkinsPage = () => {
 						<div className="absolute top-2 right-2 bg-spotify-green text-white px-2 py-1 rounded text-xs flex items-center gap-1">
 							<Check className="w-3 h-3" />
 							Активен
+						</div>
+					)}
+					{customCount > 0 && (
+						<div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+							Своё фото: {customCount}/4
 						</div>
 					)}
 				</div>
@@ -174,6 +193,28 @@ const SkinsPage = () => {
 						)}
 					</div>
 					
+					{/* Редактирование баннеров 4 окон своими фото (кроме «Стандартный») */}
+					{editable && (user ? (
+						<Button
+							onClick={() => setEditingSkinId(skin.id)}
+							variant="outline"
+							size="sm"
+							className="w-full mt-2 gap-1.5 border-white/20 bg-transparent text-white hover:bg-white/10"
+							data-testid="skin-edit-button"
+						>
+							<Pencil className="w-4 h-4" />
+							Редактировать
+						</Button>
+					) : (
+						<Link
+							to="/login"
+							className="mt-2 flex items-center justify-center gap-1.5 rounded-md border border-white/10 px-3 py-1.5 text-xs text-spotify-text-muted hover:text-white"
+						>
+							<Lock className="w-3.5 h-3.5" />
+							Войдите, чтобы редактировать
+						</Link>
+					))}
+					
 					{/* Color preview */}
 					<div className="flex gap-2 mt-2">
 						<div
@@ -202,7 +243,7 @@ const SkinsPage = () => {
 	}
 	
 	return (
-		<div className="p-4 md:p-6 pb-32">
+		<div className="h-full min-w-0 overflow-y-auto p-4 md:p-6 pb-32">
 			{/* Header */}
 			<div className="mb-6">
 				<h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
@@ -252,6 +293,10 @@ const SkinsPage = () => {
 				{selectedTab === "library" && mySkins.map(skin => renderSkinCard(skin, true))}
 				{selectedTab === "market" && availableSkins.map(skin => renderSkinCard(skin, false))}
 			</div>
+			
+			{editingSkin && (
+				<SkinBannerEditor skin={editingSkin} onClose={() => setEditingSkinId(null)} />
+			)}
 			
 			{/* Create Custom Skin Modal */}
 			{showCreateModal && (
