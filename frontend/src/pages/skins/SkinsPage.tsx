@@ -289,7 +289,7 @@ const SkinsPage = () => {
 			</div>
 			
 			{/* Content */}
-			<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+			<div className="track-card-grid">
 				{selectedTab === "library" && mySkins.map(skin => renderSkinCard(skin, true))}
 				{selectedTab === "market" && availableSkins.map(skin => renderSkinCard(skin, false))}
 			</div>
