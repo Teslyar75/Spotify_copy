@@ -72,6 +72,20 @@
 
 /* Hover lift effect for cards - как в Spotify */
 @layer components {
+	.track-card-grid {
+		display: grid;
+		gap: 0.75rem;
+		width: 100%;
+		min-width: 0;
+		grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	}
+
+	@media (min-width: 640px) {
+		.track-card-grid {
+			gap: 1rem;
+		}
+	}
+
 	.spotify-card {
 		@apply transition-all duration-200;
 	}

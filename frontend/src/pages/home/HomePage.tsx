@@ -6,6 +6,7 @@ import SectionGrid from "./components/SectionGrid";
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { Song } from "@/types";
 import JamendoRecommendations from "./components/JamendoRecommendations";
+import { useSkinStore } from "@/stores/useSkinStore";
 
 const HomePage = () => {
 	const {
@@ -23,6 +24,7 @@ const HomePage = () => {
 	const [isLoadingGenres, setIsLoadingGenres] = useState(false);
 
 	const { initializeQueue } = usePlayerStore();
+	const { activeSkin } = useSkinStore();
 
 	useEffect(() => {
 		fetchFeaturedSongs();
@@ -57,12 +59,12 @@ const HomePage = () => {
 	};
 
 	return (
-		<main className="flex-1 flex flex-col min-h-0 bg-spotify-charcoal overflow-hidden">
+		<main className="flex-1 flex flex-col min-h-0 min-w-0 bg-spotify-charcoal overflow-hidden w-full max-w-full">
 		{/* Header с фоновой картинкой */}
-		<div className="relative h-[220px] min-h-[220px] sm:h-[260px] sm:min-h-[260px] md:h-[300px] md:min-h-[300px] lg:h-[332px] lg:min-h-[332px] overflow-hidden">
+		<div className="relative h-[220px] min-h-[220px] sm:h-[260px] sm:min-h-[260px] md:h-[300px] md:min-h-[300px] lg:h-[332px] lg:min-h-[332px] overflow-hidden w-full">
 			{/* Фоновое изображение */}
 			<img
-				src="/home-header-bg.png"
+				src={activeSkin?.banners?.home || activeSkin?.banner_url || "/home-header-bg.png"}
 				alt=""
 				className="absolute inset-0 h-full w-full object-cover object-center"
 			/>
@@ -85,9 +87,9 @@ const HomePage = () => {
 		</div>
 
 			{/* Content */}
-			<ScrollArea className="flex-1 scrollbar-spotify">
-				<div className="relative z-10 -mt-6 px-4 pb-28 pt-0 sm:-mt-7 sm:px-5 md:-mt-8 md:px-6 md:pb-32">
-					<div className="space-y-8 md:space-y-10">
+			<ScrollArea className="flex-1 scrollbar-spotify w-full max-w-full">
+				<div className="relative z-10 -mt-6 px-4 pb-28 pt-0 sm:-mt-7 sm:px-5 md:-mt-8 md:px-6 md:pb-32 w-full max-w-full">
+					<div className="space-y-8 md:space-y-10 w-full max-w-full overflow-hidden">
 						<SectionGrid 
 							title="Made For You" 
 							songs={madeForYouSongs} 

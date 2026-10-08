@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Playlist, Album } from "@/types";
 import { axiosInstance } from "@/lib/axios";
+import { useSkinStore } from "@/stores/useSkinStore";
 import { Heart, BookOpen, Disc3 } from "lucide-react";
 import PlaylistCard from "@/components/ui/PlaylistCard";
 import { Play, Pencil, Trash2 } from "lucide-react";
@@ -23,6 +24,7 @@ const LibraryPage = () => {
 	const { playAlbum, setCurrentSong} = usePlayerStore();
 	const { fetchAlbums, albums } = useMusicStore();
   const { savedAlbums, likedSongs, removeAlbum, unlikeSong } = useLibraryStore();
+	const { activeSkin } = useSkinStore();
 
 	useEffect(() => {
 		const loadPlaylists = async () => {
@@ -69,14 +71,14 @@ const LibraryPage = () => {
   ];
 
 	return (
-		<main className="flex flex-1 flex-col min-h-0 overflow-hidden bg-spotify-charcoal">
+		<main className="flex flex-1 flex-col min-h-0 min-w-0 overflow-hidden bg-spotify-charcoal">
 		<div className="relative h-[260px] min-h-[260px] sm:h-[300px] sm:min-h-[300px] md:h-[360px] md:min-h-[360px] lg:h-[400px] lg:min-h-[400px] overflow-hidden">
-			{/* Фоновое изображение */}
-			<img
-				src="/library-header-bg.png"
-				alt=""
-				className="absolute inset-0 h-full w-full object-cover object-top"
-			/>
+		{/* Фоновое изображение */}
+		<img
+			src={activeSkin?.banners?.library || activeSkin?.banner_url || "/library-header-bg.png"}
+			alt=""
+			className="absolute inset-0 h-full w-full object-cover object-top"
+		/>
 			{/* Тёмный градиент поверх фото */}
 			<div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-spotify-charcoal" />
 
@@ -114,10 +116,10 @@ const LibraryPage = () => {
             ) : activeTab === "playlists" ? (
               // ===== PLAYLISTS =====
               <>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
+                <div className="track-card-grid">
                   {/* Liked Songs / My Favorite Songs — виртуальный плейлист с любимыми треками */}
                   <div
-                    className="group relative p-4 rounded-lg bg-gradient-to-br from-indigo-500/80 to-purple-600/80 hover:from-indigo-500 hover:to-purple-600 transition cursor-pointer"
+                    className="group relative min-w-0 p-4 rounded-lg bg-gradient-to-br from-indigo-500/80 to-purple-600/80 hover:from-indigo-500 hover:to-purple-600 transition cursor-pointer"
                     onClick={() => {
                       if (likedSongs.length > 0) {
                         playAlbum(likedSongs, 0);
@@ -139,7 +141,7 @@ const LibraryPage = () => {
                   </div>
 
                   <div
-                    className="relative p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors min-h-[200px] flex items-center justify-center border-2 border-dashed border-white/20 cursor-pointer"
+                    className="relative min-w-0 p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors min-h-[200px] flex items-center justify-center border-2 border-dashed border-white/20 cursor-pointer"
                     onClick={handleCreatePlaylist}
                   >
                     <Plus className="h-12 w-12 text-spotify-text-muted" />
@@ -186,12 +188,12 @@ const LibraryPage = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
+                  <div className="track-card-grid">
                     {savedAlbums.map((album) => (
                       <Link
                         key={album.id}
                         to={`/albums/${album.id}`}
-                        className="group relative block rounded-lg bg-white/5 p-3 transition-colors hover:bg-white/10 sm:p-4"
+                        className="group relative block min-w-0 rounded-lg bg-white/5 p-3 transition-colors hover:bg-white/10 sm:p-4"
                       >
                         <div className="relative mb-3">
                           <img

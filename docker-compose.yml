@@ -36,7 +36,7 @@ services:
       ADMIN_EMAILS: ${ADMIN_EMAILS:-test@example.com}
       JAMENDO_CLIENT_ID: ${JAMENDO_CLIENT_ID:-8fcd3124}
     ports:
-      - "8080:8000"
+      - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,10 +48,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_URL: /api
+        VITE_WS_URL: ws://localhost:3000
     container_name: spotify_frontend
     environment:
-      VITE_API_URL: http://localhost:8000/api
-      VITE_WS_URL: ws://localhost:8000
+      VITE_API_URL: /api
+      VITE_WS_URL: ws://localhost:3000
     ports:
       - "3000:80"
     depends_on:

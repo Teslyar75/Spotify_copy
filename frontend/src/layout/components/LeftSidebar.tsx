@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useMusicStore } from "@/stores/useMusicStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Play, Home, Search, Library } from "lucide-react";
+import { Play, Home, Search, Library, Palette } from "lucide-react";
 import { usePlayerStore } from "@/stores/usePlayerStore";
 
 const LeftSidebar = () => {
@@ -47,10 +47,14 @@ const LeftSidebar = () => {
 					<Search className="h-6 w-6 shrink-0" fill={location.pathname === "/search" ? "currentColor" : "none"} />
 					<span className="font-medium text-sm truncate">Search</span>
 				</Link>
-				<Link to="/library" className={navLinkClass(location.pathname === "/library")}>
-					<Library className="h-6 w-6 shrink-0" fill={location.pathname === "/library" ? "currentColor" : "none"} />
-					<span className="font-medium text-sm truncate">Your Library</span>
-				</Link>
+			<Link to="/library" className={navLinkClass(location.pathname === "/library")}>
+				<Library className="h-6 w-6 shrink-0" fill={location.pathname === "/library" ? "currentColor" : "none"} />
+				<span className="font-medium text-sm truncate">Your Library</span>
+			</Link>
+			<Link to="/skins" className={navLinkClass(location.pathname === "/skins")}>
+				<Palette className="h-6 w-6 shrink-0" />
+				<span className="font-medium text-sm truncate">Скины</span>
+			</Link>
 			</nav>
 
 			<ScrollArea className="flex-1 px-3 pt-2 scrollbar-spotify">

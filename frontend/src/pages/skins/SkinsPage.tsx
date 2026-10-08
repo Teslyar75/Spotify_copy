@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { useSkinStore } from "@/stores/useSkinStore";
+import { Link } from "react-router-dom";
+import { isStandardSkin, Skin, useSkinStore } from "@/stores/useSkinStore";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
-import { Check, Upload, X } from "lucide-react";
+import { Check, Lock, Pencil, Upload, X } from "lucide-react";
+import SkinBannerEditor from "./components/SkinBannerEditor";
 
 const SkinsPage = () => {
 	const { user } = useAuthStore();
@@ -14,6 +17,7 @@ const SkinsPage = () => {
 		isLoading,
 		fetchAvailableSkins,
 		fetchMySkins,
+		fetchPresetSkins,
 		fetchActiveSkin,
 		applySkin,
 		purchaseSkin,
@@ -21,16 +25,29 @@ const SkinsPage = () => {
 	} = useSkinStore();
 	
 	const [selectedTab, setSelectedTab] = useState<"library" | "market">("library");
-	const [uploadingImage, setUploadingImage] = useState(false);
-	const [showUploadModal, setShowUploadModal] = useState(false);
+	const [showCreateModal, setShowCreateModal] = useState(false);
 	const [newSkinName, setNewSkinName] = useState("");
-	const [uploadedImageData, setUploadedImageData] = useState<any>(null);
+	const [photoSlots, setPhotoSlots] = useState<{
+		home: File | null;
+		search: File | null;
+		library: File | null;
+		player: File | null;
+	}>({ home: null, search: null, library: null, player: null });
+	const [creatingCustomSkin, setCreatingCustomSkin] = useState(false);
+	// скин, баннеры которого сейчас редактируются (id → свежая версия из стора)
+	const [editingSkinId, setEditingSkinId] = useState<string | null>(null);
+	const editingSkin: Skin | undefined = editingSkinId
+		? mySkins.find((s) => s.id === editingSkinId) || availableSkins.find((s) => s.id === editingSkinId)
+		: undefined;
 	
 	useEffect(() => {
 		fetchActiveSkin();
 		fetchAvailableSkins();
 		if (user) {
 			fetchMySkins();
+		} else {
+			// гостю показываем встроенные скины во вкладке «Моя библиотека»
+			fetchPresetSkins();
 		}
 	}, [user]);
 	
@@ -58,74 +75,44 @@ const SkinsPage = () => {
 		}
 	};
 	
-	const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-		
-		if (!user) {
-			toast.error("Войдите, чтобы загружать фото");
-			return;
-		}
-		
-		setUploadingImage(true);
-		try {
-			const data = await uploadSkinImage(file);
-			setUploadedImageData(data);
-			setShowUploadModal(true);
-		} catch (error: any) {
-			toast.error(error.response?.data?.detail || "Ошибка загрузки изображения");
-		} finally {
-			setUploadingImage(false);
-		}
+	const handleSlotPhotoChange = (slot: "home" | "search" | "library" | "player", file: File | null) => {
+		setPhotoSlots(prev => ({ ...prev, [slot]: file }));
 	};
 	
-	const handleCreateSkin = async () => {
-		if (!uploadedImageData || !newSkinName) {
+	const handleCreateCustomSkin = async () => {
+		if (!newSkinName.trim()) {
 			toast.error("Введите название скина");
 			return;
 		}
 		
+		const providedPhotos = Object.values(photoSlots).filter(Boolean);
+		if (providedPhotos.length === 0) {
+			toast.error("Загрузите хотя бы одно фото");
+			return;
+		}
+		
+		setCreatingCustomSkin(true);
 		try {
-			// Создаём скин через API
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/skins`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					"Authorization": `Bearer ${localStorage.getItem("access_token")}`
-				},
-				body: JSON.stringify({
-					name: newSkinName,
-					button_style: "round",
-					animation_type: "none",
-					is_public: false
-				})
+			const formData = new FormData();
+			formData.append("name", newSkinName);
+			if (photoSlots.home) formData.append("home", photoSlots.home);
+			if (photoSlots.search) formData.append("search", photoSlots.search);
+			if (photoSlots.library) formData.append("library", photoSlots.library);
+			if (photoSlots.player) formData.append("player", photoSlots.player);
+			
+			const response = await axiosInstance.post("/skins/create-custom", formData, {
+				headers: { "Content-Type": "multipart/form-data" }
 			});
 			
-			if (!response.ok) throw new Error("Failed to create skin");
-			
-			const skin = await response.json();
-			
-			// Обновляем скин с изображениями
-			await fetch(`${import.meta.env.VITE_API_URL}/skins/${skin.id}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-					"Authorization": `Bearer ${localStorage.getItem("access_token")}`
-				},
-				body: JSON.stringify({
-					name: newSkinName
-				})
-			});
-			
-			// TODO: link uploaded images to skin
-			
-			toast.success("Скин создан!");
-			setShowUploadModal(false);
+			toast.success(`Скин "${response.data.name}" создан!`);
+			setShowCreateModal(false);
 			setNewSkinName("");
-			setUploadedImageData(null);
+			setPhotoSlots({ home: null, search: null, library: null, player: null });
 			await fetchMySkins();
-		} catch (error) {
-			toast.error("Ошибка создания скина");
+		} catch (error: any) {
+			toast.error(error.response?.data?.detail || "Ошибка создания скина");
+		} finally {
+			setCreatingCustomSkin(false);
 		}
 	};
 	
@@ -136,6 +123,9 @@ const SkinsPage = () => {
 	const renderSkinCard = (skin: any, isLibrary: boolean = false) => {
 		const isActive = activeSkin?.id === skin.id;
 		const isOwned = skinIsOwned(skin.id);
+		const preview: string | undefined = skin.banners?.home || skin.thumbnail_url;
+		const customCount: number = skin.custom_slots?.length ?? 0;
+		const editable = !isStandardSkin(skin);
 		
 		return (
 			<div
@@ -144,14 +134,14 @@ const SkinsPage = () => {
 			>
 				{/* Thumbnail/Preview */}
 				<div className="aspect-[3/2] relative bg-gradient-to-br from-spotify-sidebar to-spotify-black">
-					{skin.thumbnail_url && (
+					{preview && (
 						<img
-							src={skin.thumbnail_url}
+							src={preview}
 							alt={skin.name}
 							className="w-full h-full object-cover"
 						/>
 					)}
-					{!skin.thumbnail_url && (
+					{!preview && (
 						<div
 							className="w-full h-full flex items-center justify-center text-6xl font-bold"
 							style={{
@@ -166,6 +156,11 @@ const SkinsPage = () => {
 						<div className="absolute top-2 right-2 bg-spotify-green text-white px-2 py-1 rounded text-xs flex items-center gap-1">
 							<Check className="w-3 h-3" />
 							Активен
+						</div>
+					)}
+					{customCount > 0 && (
+						<div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+							Своё фото: {customCount}/4
 						</div>
 					)}
 				</div>
@@ -198,6 +193,28 @@ const SkinsPage = () => {
 						)}
 					</div>
 					
+					{/* Редактирование баннеров 4 окон своими фото (кроме «Стандартный») */}
+					{editable && (user ? (
+						<Button
+							onClick={() => setEditingSkinId(skin.id)}
+							variant="outline"
+							size="sm"
+							className="w-full mt-2 gap-1.5 border-white/20 bg-transparent text-white hover:bg-white/10"
+							data-testid="skin-edit-button"
+						>
+							<Pencil className="w-4 h-4" />
+							Редактировать
+						</Button>
+					) : (
+						<Link
+							to="/login"
+							className="mt-2 flex items-center justify-center gap-1.5 rounded-md border border-white/10 px-3 py-1.5 text-xs text-spotify-text-muted hover:text-white"
+						>
+							<Lock className="w-3.5 h-3.5" />
+							Войдите, чтобы редактировать
+						</Link>
+					))}
+					
 					{/* Color preview */}
 					<div className="flex gap-2 mt-2">
 						<div
@@ -226,7 +243,7 @@ const SkinsPage = () => {
 	}
 	
 	return (
-		<div className="p-4 md:p-6 pb-32">
+		<div className="h-full min-w-0 overflow-y-auto p-4 md:p-6 pb-32">
 			{/* Header */}
 			<div className="mb-6">
 				<h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
@@ -237,23 +254,13 @@ const SkinsPage = () => {
 				</p>
 			</div>
 			
-			{/* Upload button */}
+			{/* Create custom skin button */}
 			{user && (
 				<div className="mb-6">
-					<label className="cursor-pointer">
-						<input
-							type="file"
-							accept="image/*"
-							capture="environment"
-							className="hidden"
-							onChange={handleImageUpload}
-							disabled={uploadingImage}
-						/>
-						<Button disabled={uploadingImage} className="gap-2">
-							<Upload className="w-4 h-4" />
-							{uploadingImage ? "Загрузка..." : "Загрузить своё фото"}
-						</Button>
-					</label>
+					<Button onClick={() => setShowCreateModal(true)} className="gap-2">
+						<Upload className="w-4 h-4" />
+						Создать свой скин
+					</Button>
 				</div>
 			)}
 			
@@ -282,28 +289,24 @@ const SkinsPage = () => {
 			</div>
 			
 			{/* Content */}
-			<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+			<div className="track-card-grid">
 				{selectedTab === "library" && mySkins.map(skin => renderSkinCard(skin, true))}
 				{selectedTab === "market" && availableSkins.map(skin => renderSkinCard(skin, false))}
 			</div>
 			
-			{/* Upload Modal */}
-			{showUploadModal && uploadedImageData && (
-				<div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-					<div className="bg-spotify-charcoal rounded-lg p-6 max-w-md w-full">
+			{editingSkin && (
+				<SkinBannerEditor skin={editingSkin} onClose={() => setEditingSkinId(null)} />
+			)}
+			
+			{/* Create Custom Skin Modal */}
+			{showCreateModal && (
+				<div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 overflow-y-auto">
+					<div className="bg-spotify-charcoal rounded-lg p-6 max-w-2xl w-full my-8">
 						<div className="flex justify-between items-center mb-4">
-							<h2 className="text-xl font-bold text-white">Создать скин</h2>
-							<button onClick={() => setShowUploadModal(false)}>
+							<h2 className="text-xl font-bold text-white">Создать свой скин</h2>
+							<button onClick={() => setShowCreateModal(false)}>
 								<X className="w-5 h-5 text-spotify-text-muted hover:text-white" />
 							</button>
-						</div>
-						
-						<div className="mb-4">
-							<img
-								src={uploadedImageData.thumbnail_url}
-								alt="Preview"
-								className="w-full rounded-lg"
-							/>
 						</div>
 						
 						<div className="mb-4">
@@ -319,29 +322,61 @@ const SkinsPage = () => {
 							/>
 						</div>
 						
-						<div className="flex gap-2 mb-4">
-							<div className="flex-1">
-								<span className="text-xs text-spotify-text-muted">Цвет 1</span>
-								<div
-									className="w-full h-8 rounded mt-1 border border-white/20"
-									style={{ backgroundColor: uploadedImageData.accent_color }}
-								/>
-							</div>
-							<div className="flex-1">
-								<span className="text-xs text-spotify-text-muted">Цвет 2</span>
-								<div
-									className="w-full h-8 rounded mt-1 border border-white/20"
-									style={{ backgroundColor: uploadedImageData.accent_secondary }}
-								/>
-							</div>
+						<p className="text-xs text-spotify-text-muted mb-4">
+							Загрузите до 4 фото (или меньше — доступные фото переиспользуются). Каждое фото будет обрезано до 1200×400.
+						</p>
+						
+						{/* 4 photo slots */}
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+							{(["home", "search", "library", "player"] as const).map((slot, idx) => {
+								const labels = { home: "Главная", search: "Поиск", library: "Библиотека", player: "Плеер" };
+								const file = photoSlots[slot];
+								return (
+									<div key={slot} className="border border-white/10 rounded-lg p-3">
+										<label className="block text-sm text-white mb-2">{labels[slot]}</label>
+										<label className="cursor-pointer block">
+											<input
+												type="file"
+												accept="image/*"
+												className="hidden"
+												onChange={(e) => {
+													const f = e.target.files?.[0];
+													handleSlotPhotoChange(slot, f || null);
+												}}
+											/>
+											<div className="bg-spotify-sidebar rounded border border-dashed border-white/20 hover:border-spotify-green transition h-24 flex items-center justify-center text-xs text-spotify-text-muted">
+												{file ? (
+													<div className="text-center">
+														<div className="text-white truncate max-w-[150px]">{file.name}</div>
+														<div className="text-[10px]">{(file.size / 1024).toFixed(0)} KB</div>
+													</div>
+												) : (
+													<div className="flex flex-col items-center gap-1">
+														<Upload className="w-4 h-4" />
+														<span>Загрузить</span>
+													</div>
+												)}
+											</div>
+										</label>
+										{file && (
+											<button
+												onClick={() => handleSlotPhotoChange(slot, null)}
+												className="text-xs text-spotify-text-muted hover:text-white mt-1"
+											>
+												Удалить
+											</button>
+										)}
+									</div>
+								);
+							})}
 						</div>
 						
 						<Button
-							onClick={handleCreateSkin}
-							disabled={!newSkinName}
+							onClick={handleCreateCustomSkin}
+							disabled={creatingCustomSkin || !newSkinName.trim() || Object.values(photoSlots).every(f => !f)}
 							className="w-full"
 						>
-							Создать скин
+							{creatingCustomSkin ? "Создание..." : "Создать скин"}
 						</Button>
 					</div>
 				</div>

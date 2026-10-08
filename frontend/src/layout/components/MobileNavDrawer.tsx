@@ -5,7 +5,7 @@ import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useMobileMenuStore } from "@/stores/useMobileMenuStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Play, Home, Search, Library, X } from "lucide-react";
+import { Play, Home, Search, Library, Palette, X } from "lucide-react";
 
 const MobileNavDrawer = () => {
 	const { albums, fetchAlbums } = useMusicStore();
@@ -66,10 +66,14 @@ const MobileNavDrawer = () => {
 						<Search className="h-6 w-6 shrink-0" fill={location.pathname === "/search" ? "currentColor" : "none"} />
 						Search
 					</Link>
-					<Link to="/library" className={navLinkClass(location.pathname === "/library")} onClick={close}>
-						<Library className="h-6 w-6 shrink-0" fill={location.pathname === "/library" ? "currentColor" : "none"} />
-						Your Library
-					</Link>
+				<Link to="/library" className={navLinkClass(location.pathname === "/library")} onClick={close}>
+					<Library className="h-6 w-6 shrink-0" fill={location.pathname === "/library" ? "currentColor" : "none"} />
+					Your Library
+				</Link>
+				<Link to="/skins" className={navLinkClass(location.pathname === "/skins")} onClick={close}>
+					<Palette className="h-6 w-6 shrink-0" />
+					Скины
+				</Link>
 				</nav>
 
 				<div className="flex-1 min-h-0 flex flex-col px-3 pt-2">

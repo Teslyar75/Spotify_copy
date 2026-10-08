@@ -10,14 +10,19 @@ DELETE /api/skins/{skin_id} — удалить свой скин
 POST /api/skins/upload-image — загрузить изображение для скина
 POST /api/skins/activate — установить активный скин
 GET /api/skins/active — получить активный скин текущего пользователя
+GET /api/skins/{skin_id}/banners — баннеры скина с учётом личных фото пользователя
+POST /api/skins/{skin_id}/banners/{slot} — заменить баннер окна своим фото
+DELETE /api/skins/{skin_id}/banners/{slot} — вернуть баннер темы
 """
 
+import io
 import uuid
 from pathlib import Path
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from PIL import Image
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -28,7 +33,8 @@ from app.models.user_profile import UserProfile
 from app.models.skin_entitlement import SkinEntitlement
 from app.models.promotion import Promotion
 from app.models.stake import Stake
-from app.image_processing import process_skin_image, validate_image_upload
+from app.models.user_skin_banner import UserSkinBanner, BANNER_SLOTS
+from app.image_processing import process_skin_image, resize_and_crop_image, validate_image_upload
 from datetime import datetime, timedelta
 
 router = APIRouter()
@@ -36,6 +42,11 @@ router = APIRouter()
 # Пути к папкам
 MEDIA_DIR = Path(__file__).resolve().parent.parent.parent / "media"
 SKINS_DIR = MEDIA_DIR / "skins"
+USER_BANNERS_DIR = SKINS_DIR / "user"  # личные фото пользователей: /media/skins/user/<user_id>/...
+
+STANDARD_SKIN_NAME = "Стандартный"  # оригинальные заголовки, редактировать нельзя
+MAX_BANNER_MB = 10
+ALLOWED_BANNER_FORMATS = {"JPEG", "PNG", "WEBP"}
 
 
 def _ensure_dirs():
@@ -55,6 +66,9 @@ class SkinResponse(BaseModel):
     banner_url: Optional[str]
     background_url: Optional[str]
     thumbnail_url: Optional[str]
+    banners: Optional[dict] = None  # баннеры с учётом личных фото пользователя
+    default_banners: Optional[dict] = None  # баннеры темы (без личных фото)
+    custom_slots: list[str] = []  # окна, где стоит личное фото пользователя
     button_style: str
     accent_color: Optional[str]
     accent_secondary: Optional[str]
@@ -109,14 +123,98 @@ class CreateStakeRequest(BaseModel):
 
 
 # ──────────────────────────────────────────────
+# Личные баннеры пользователя (поверх баннеров темы)
+# ──────────────────────────────────────────────
+
+def _is_standard_skin(skin: Skin) -> bool:
+    return bool(skin.is_preset) and skin.name == STANDARD_SKIN_NAME
+
+
+def _load_overrides(db: Session, user_id: Optional[UUID], skin_ids) -> dict:
+    """{skin_id: {slot: url}} личных фото пользователя для заданных скинов."""
+    skin_ids = list(skin_ids)
+    if not user_id or not skin_ids:
+        return {}
+    rows = db.query(UserSkinBanner).filter(
+        UserSkinBanner.user_id == user_id,
+        UserSkinBanner.skin_id.in_(skin_ids),
+    ).all()
+    result: dict = {}
+    for row in rows:
+        result.setdefault(row.skin_id, {})[row.slot] = row.url
+    return result
+
+
+def _to_response(skin: Skin, overrides: Optional[dict] = None) -> SkinResponse:
+    """Скин для ответа: баннеры темы + личные фото (личное фото побеждает по слоту)."""
+    data = SkinResponse.model_validate(skin)
+    defaults = dict(skin.banners) if skin.banners else None
+    overrides = overrides or {}
+    merged = {**(defaults or {}), **overrides}
+    return data.model_copy(update={
+        "banners": merged or None,
+        "default_banners": defaults,
+        "custom_slots": [slot for slot in BANNER_SLOTS if slot in overrides],
+    })
+
+
+def _with_user_banners(db: Session, user_id: Optional[UUID], skins: list) -> list[SkinResponse]:
+    overrides = _load_overrides(db, user_id, {skin.id for skin in skins})
+    return [_to_response(skin, overrides.get(skin.id)) for skin in skins]
+
+
+def _skin_for_user(db: Session, skin: Optional[Skin], user_id: Optional[UUID]) -> Optional[SkinResponse]:
+    if not skin:
+        return None
+    return _to_response(skin, _load_overrides(db, user_id, [skin.id]).get(skin.id))
+
+
+def _check_slot(slot: str) -> None:
+    if slot not in BANNER_SLOTS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Неизвестное окно. Допустимо: home, search, library, player",
+        )
+
+
+def _get_editable_skin(db: Session, skin_id: UUID, user_id: UUID) -> Skin:
+    skin = db.query(Skin).filter(Skin.id == skin_id).first()
+    if not skin:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Скин не найден")
+    if _is_standard_skin(skin):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Скин «Стандартный» нельзя редактировать — выберите тематический скин",
+        )
+    if not (skin.is_preset or skin.is_public or skin.owner_id == user_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа к этому скину")
+    return skin
+
+
+def _remove_user_banner_file(url: Optional[str]) -> None:
+    """Удаляет файл личного баннера (только из /media/skins/user/)."""
+    if not url or not url.startswith("/media/skins/user/"):
+        return
+    try:
+        path = (MEDIA_DIR / url[len("/media/"):]).resolve()
+        if USER_BANNERS_DIR.resolve() in path.parents:
+            path.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+# ──────────────────────────────────────────────
 # Endpoints
 # ──────────────────────────────────────────────
 
 @router.get("/presets", response_model=list[SkinResponse])
-def get_preset_skins(db: Session = Depends(get_db)):
+def get_preset_skins(
+    user_id: Optional[UUID] = Depends(get_optional_user_id),
+    db: Session = Depends(get_db)
+):
     """Получить список встроенных preset-скинов."""
     presets = db.query(Skin).filter(Skin.is_preset == True).all()
-    return presets
+    return _with_user_banners(db, user_id, presets)
 
 
 @router.get("", response_model=list[SkinResponse])
@@ -135,7 +233,7 @@ def get_all_skins(
         Skin.is_preset.desc(), Skin.created_at.desc()
     ).all()
     
-    return skins
+    return _with_user_banners(db, user_id, skins)
 
 
 @router.get("/library", response_model=list[SkinResponse])
@@ -168,7 +266,7 @@ def get_my_skin_library(
     # Объединяем и убираем дубликаты
     all_skins = {skin.id: skin for skin in (preset_skins + own_skins + purchased_skins)}
     
-    return list(all_skins.values())
+    return _with_user_banners(db, user_id, list(all_skins.values()))
 
 
 @router.get("/active", response_model=Optional[SkinResponse])
@@ -188,11 +286,15 @@ def get_active_skin(
         return None
     
     skin = db.query(Skin).filter(Skin.id == profile.active_skin_id).first()
-    return skin
+    return _skin_for_user(db, skin, user_id)
 
 
 @router.get("/{skin_id}", response_model=SkinResponse)
-def get_skin(skin_id: UUID, db: Session = Depends(get_db)):
+def get_skin(
+    skin_id: UUID,
+    user_id: Optional[UUID] = Depends(get_optional_user_id),
+    db: Session = Depends(get_db)
+):
     """Получить детали конкретного скина."""
     skin = db.query(Skin).filter(Skin.id == skin_id).first()
     
@@ -202,7 +304,113 @@ def get_skin(skin_id: UUID, db: Session = Depends(get_db)):
             detail="Skin not found"
         )
     
-    return skin
+    return _skin_for_user(db, skin, user_id)
+
+
+@router.get("/{skin_id}/banners", response_model=SkinResponse)
+def get_skin_banners(
+    skin_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """Баннеры скина для 4 окон: тема + личные фото пользователя (custom_slots)."""
+    skin = db.query(Skin).filter(Skin.id == skin_id).first()
+    if not skin:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Скин не найден")
+    return _skin_for_user(db, skin, user_id)
+
+
+@router.post("/{skin_id}/banners/{slot}", response_model=SkinResponse)
+def upload_skin_banner(
+    skin_id: UUID,
+    slot: str,
+    file: UploadFile = File(...),
+    user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Заменить баннер одного окна (home/search/library/player) своим фото.
+    JPG/PNG/WebP до 10 МБ -> обрезка по центру до 1200x400 WebP.
+    Тема не меняется: фото хранится как личное переопределение пользователя.
+    """
+    _check_slot(slot)
+    skin = _get_editable_skin(db, skin_id, user_id)
+
+    max_bytes = MAX_BANNER_MB * 1024 * 1024
+    data = file.file.read(max_bytes + 1)
+    if len(data) > max_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Файл слишком большой (максимум {MAX_BANNER_MB} МБ)",
+        )
+    if not data:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Файл пустой")
+    try:
+        probe = Image.open(io.BytesIO(data))
+        image_format = probe.format
+        probe.verify()
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Файл не похож на изображение или повреждён",
+        )
+    if image_format not in ALLOWED_BANNER_FORMATS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Поддерживаются только JPG, PNG и WebP",
+        )
+    try:
+        banner_bytes, _ = resize_and_crop_image(data, 1200, 400, quality=85, output_format="WEBP")
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Не удалось обработать изображение",
+        )
+
+    user_dir = USER_BANNERS_DIR / str(user_id)
+    user_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"{skin.id}-{slot}-{uuid.uuid4().hex[:12]}.webp"  # новое имя -> кэш /media не мешает
+    (user_dir / filename).write_bytes(banner_bytes)
+    url = f"/media/skins/user/{user_id}/{filename}"
+
+    row = db.query(UserSkinBanner).filter(
+        UserSkinBanner.user_id == user_id,
+        UserSkinBanner.skin_id == skin.id,
+        UserSkinBanner.slot == slot,
+    ).first()
+    old_url = None
+    if row:
+        old_url = row.url
+        row.url = url
+    else:
+        db.add(UserSkinBanner(user_id=user_id, skin_id=skin.id, slot=slot, url=url))
+    db.commit()
+    _remove_user_banner_file(old_url)
+
+    return _skin_for_user(db, skin, user_id)
+
+
+@router.delete("/{skin_id}/banners/{slot}", response_model=SkinResponse)
+def reset_skin_banner(
+    skin_id: UUID,
+    slot: str,
+    user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """Вернуть баннер темы для окна (удалить личное фото)."""
+    _check_slot(slot)
+    skin = _get_editable_skin(db, skin_id, user_id)
+    row = db.query(UserSkinBanner).filter(
+        UserSkinBanner.user_id == user_id,
+        UserSkinBanner.skin_id == skin.id,
+        UserSkinBanner.slot == slot,
+    ).first()
+    if row:
+        old_url = row.url
+        db.delete(row)
+        db.commit()
+        _remove_user_banner_file(old_url)
+    return _skin_for_user(db, skin, user_id)
 
 
 @router.post("", response_model=SkinResponse, status_code=status.HTTP_201_CREATED)
@@ -371,6 +579,91 @@ def upload_skin_image(
     }
 
 
+@router.post("/create-custom", response_model=SkinResponse)
+def create_custom_skin(
+    name: str = Form(...),
+    home: Optional[UploadFile] = File(None),
+    search: Optional[UploadFile] = File(None),
+    library: Optional[UploadFile] = File(None),
+    player: Optional[UploadFile] = File(None),
+    user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a custom 4-banner skin from up to 4 uploaded photos.
+    
+    Each photo is center-cropped to 1200x400 WebP (<150 KB).
+    Accent colors are extracted from the first provided photo.
+    If fewer than 4 photos, reuse in order: home -> search -> library -> player.
+    
+    Returns the created skin saved to the user's library.
+    """
+    _ensure_dirs()
+    
+    # Collect uploaded files in order
+    photos = []
+    for slot_file in [home, search, library, player]:
+        if slot_file and slot_file.filename:
+            data = slot_file.file.read()
+            if not validate_image_upload(data, max_size_mb=10):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid image in {slot_file.filename} or file too large (max 10MB)"
+                )
+            photos.append(data)
+    
+    if not photos:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one photo required"
+        )
+    
+    # Process first photo for accent colors
+    from app.image_processing import resize_and_crop_image, get_dominant_color, get_secondary_color, fix_exif_orientation
+    from PIL import Image
+    import io as io_module
+    
+    original_img = Image.open(io_module.BytesIO(photos[0]))
+    original_img = fix_exif_orientation(original_img)
+    dominant = get_dominant_color(original_img)
+    secondary = get_secondary_color(original_img, dominant)
+    
+    # Fallback reuse: if fewer than 4 photos, cycle through available
+    while len(photos) < 4:
+        photos.append(photos[len(photos) % len(photos)])
+    
+    # Process each photo to 1200x400 WebP
+    file_id = uuid.uuid4().hex
+    banner_urls = {}
+    slot_names = ["home", "search", "library", "player"]
+    
+    for idx, (slot_name, photo_data) in enumerate(zip(slot_names, photos)):
+        banner_bytes, _ = resize_and_crop_image(photo_data, 1200, 400, quality=85, output_format="WEBP")
+        filename = f"{file_id}-{slot_name}.webp"
+        (SKINS_DIR / filename).write_bytes(banner_bytes)
+        banner_urls[slot_name] = f"/media/skins/{filename}"
+    
+    # Create skin in DB
+    new_skin = Skin(
+        name=name,
+        owner_id=user_id,
+        button_style="round",
+        accent_color=dominant,
+        accent_secondary=secondary,
+        animation_type="none",
+        is_public=False,
+        is_preset=False,
+        banners=banner_urls,
+        banner_url=banner_urls["home"],  # fallback
+        thumbnail_url=banner_urls["home"]
+    )
+    db.add(new_skin)
+    db.commit()
+    db.refresh(new_skin)
+    
+    return new_skin
+
+
 @router.post("/activate", response_model=SkinResponse)
 def activate_skin(
     request: ActivateSkinRequest,
@@ -417,10 +710,11 @@ def activate_skin(
     
     # Возвращаем активный скин или default preset
     if profile.active_skin_id:
-        return db.query(Skin).filter(Skin.id == profile.active_skin_id).first()
+        skin = db.query(Skin).filter(Skin.id == profile.active_skin_id).first()
     else:
-        # Возвращаем первый preset
-        return db.query(Skin).filter(Skin.is_preset == True).first()
+        skin = db.query(Skin).filter(Skin.is_preset == True).first()
+    # с личными баннерами пользователя
+    return _skin_for_user(db, skin, user_id)
 
 
 @router.post("/purchase")

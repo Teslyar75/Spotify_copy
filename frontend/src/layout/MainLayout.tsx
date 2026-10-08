@@ -29,7 +29,7 @@ const MainLayout = () => {
 		<div className="h-screen bg-spotify-black text-white flex flex-col overflow-hidden">
 			<AudioPlayer />
 
-			<div className="flex flex-1 min-h-0 overflow-hidden">
+			<div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
 				{/* Left sidebar - visible from lg (1024px) so burger menu stays longer */}
 				<aside className="hidden lg:flex lg:w-[280px] lg:min-w-[280px] shrink-0 border-r border-white/10 bg-spotify-sidebar">
 					<LeftSidebar />

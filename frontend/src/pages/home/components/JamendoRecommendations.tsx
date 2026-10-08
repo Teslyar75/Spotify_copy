@@ -17,8 +17,8 @@ interface JamendoTrack {
 }
 
 interface JamendoResponse {
-	new_for_you: JamendoTrack[];
-	already_shown: JamendoTrack[];
+	new_for_you: any[];
+	already_shown: any[];
 	skin_name: string;
 }
 
@@ -31,17 +31,29 @@ const JamendoRecommendations = () => {
 	const [showNewOnly, setShowNewOnly] = useState(true);
 
 	const fetchRecommendations = async (rotate: boolean = false) => {
-		if (!activeSkin) return;
-		
 		setIsLoading(true);
 		try {
 			const response = await axiosInstance.get<JamendoResponse>("/jamendo/discover", {
 				params: {
-					skin_name: activeSkin.name,
+					...(activeSkin ? { skin_name: activeSkin.name } : {}),
 					rotate: rotate,
 				},
 			});
-			setData(response.data);
+			// backend returns {jamendo_id,title,artist,image_url,audio_url}; normalize to JamendoTrack
+			const norm = (t: any): JamendoTrack => ({
+				id: String(t.id ?? t.jamendo_id),
+				name: t.name ?? t.title,
+				artist_name: t.artist_name ?? t.artist,
+				image: t.image ?? t.image_url,
+				audio: t.audio ?? t.audio_url,
+				duration: t.duration,
+				album_name: t.album_name,
+			});
+			setData({
+				...response.data,
+				new_for_you: (response.data.new_for_you || []).map(norm),
+				already_shown: (response.data.already_shown || []).map(norm),
+			});
 		} catch (error) {
 			console.error("Failed to fetch Jamendo recommendations:", error);
 		} finally {
@@ -87,7 +99,7 @@ const JamendoRecommendations = () => {
 		<div className="bg-white/5 rounded-lg p-6">
 			<div className="flex items-center justify-between mb-4">
 				<h2 className="text-lg font-semibold">
-					Рекомендации под скин «{data.skin_name}»
+					Рекомендации под скин {data.skin_name ? `«${data.skin_name}»` : ''}
 				</h2>
 				<div className="flex gap-2">
 					<Button
@@ -111,11 +123,11 @@ const JamendoRecommendations = () => {
 				</div>
 			</div>
 
-			<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+			<div className="track-card-grid">
 				{displayTracks.slice(0, 10).map((track) => (
 					<div
 						key={track.id}
-						className="group bg-white/5 hover:bg-white/10 rounded-lg p-3 transition-colors cursor-pointer"
+						className="group min-w-0 bg-white/5 hover:bg-white/10 rounded-lg p-3 transition-colors cursor-pointer"
 						onClick={() => {
 							const songs = displayTracks.map(jamendoToSong);
 							const index = displayTracks.findIndex((t) => t.id === track.id);
@@ -131,7 +143,7 @@ const JamendoRecommendations = () => {
 							<Button
 								variant="ghost"
 								size="icon"
-								className="absolute bottom-2 right-2 h-10 w-10 rounded-full bg-spotify-green hover:bg-spotify-green-hover text-black opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+								className="absolute bottom-2 right-2 h-10 w-10 rounded-full skin-accent-bg text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
 								onClick={(e) => {
 									e.stopPropagation();
 									const songs = displayTracks.map(jamendoToSong);

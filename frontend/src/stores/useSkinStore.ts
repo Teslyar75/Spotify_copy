@@ -1,6 +1,15 @@
 import { create } from "zustand";
 import { axiosInstance } from "@/lib/axios";
 
+export const BANNER_SLOTS = ["home", "search", "library", "player"] as const;
+export type BannerSlot = (typeof BANNER_SLOTS)[number];
+export type SkinBanners = Partial<Record<BannerSlot, string>>;
+
+// «Стандартный» = оригинальные заголовки приложения, его баннеры не редактируются
+export const STANDARD_SKIN_NAME = "Стандартный";
+export const isStandardSkin = (skin: Pick<Skin, "name" | "is_preset"> | null | undefined) =>
+	!!skin && skin.is_preset && skin.name === STANDARD_SKIN_NAME;
+
 export interface Skin {
 	id: string;
 	owner_id?: string;
@@ -16,6 +25,12 @@ export interface Skin {
 	is_public: boolean;
 	is_preset: boolean;
 	price_stars?: number;
+	// баннеры 4 окон с учётом личных фото пользователя (личное фото побеждает)
+	banners?: SkinBanners | null;
+	// баннеры темы без личных фото
+	default_banners?: SkinBanners | null;
+	// окна, где пользователь поставил своё фото
+	custom_slots?: BannerSlot[];
 }
 
 interface SkinStore {
@@ -26,6 +41,7 @@ interface SkinStore {
 	
 	fetchAvailableSkins: () => Promise<void>;
 	fetchMySkins: () => Promise<void>;
+	fetchPresetSkins: () => Promise<void>;
 	fetchActiveSkin: () => Promise<void>;
 	applySkin: (skin: Skin | null) => Promise<void>;
 	purchaseSkin: (skinId: string) => Promise<void>;
@@ -36,6 +52,14 @@ interface SkinStore {
 		accent_color: string;
 		accent_secondary: string;
 	}>;
+	uploadSkinBanner: (
+		skinId: string,
+		slot: BannerSlot,
+		file: File,
+		onProgress?: (percent: number) => void
+	) => Promise<Skin>;
+	resetSkinBanner: (skinId: string, slot: BannerSlot) => Promise<Skin>;
+	replaceSkin: (skin: Skin) => void;
 }
 
 // Применить CSS переменные скина
@@ -49,6 +73,7 @@ function applySkinCSS(skin: Skin | null) {
 		root.style.setProperty('--skin-banner', 'none');
 		root.style.setProperty('--skin-background', 'none');
 		root.style.setProperty('--button-style', 'round');
+		localStorage.removeItem('guest_active_skin');
 		return;
 	}
 	
@@ -106,10 +131,25 @@ export const useSkinStore = create<SkinStore>((set, get) => ({
 		}
 	},
 	
+	fetchPresetSkins: async () => {
+		try {
+			const response = await axiosInstance.get("/skins/presets");
+			set({ mySkins: response.data });
+		} catch (error) {
+			console.error("Failed to fetch preset skins:", error);
+		}
+	},
+	
 	fetchActiveSkin: async () => {
 		try {
 			const response = await axiosInstance.get("/skins/active");
-			const skin = response.data;
+			let skin = response.data;
+			// server returns null for guests AND for expired/stale tokens (no 401 here),
+			// so restore the last skin applied in this browser; choosing the default clears it
+			if (!skin) {
+				const savedSkin = localStorage.getItem('guest_active_skin');
+				if (savedSkin) skin = JSON.parse(savedSkin);
+			}
 			set({ activeSkin: skin });
 			applySkinCSS(skin);
 		} catch (error) {
@@ -150,6 +190,42 @@ export const useSkinStore = create<SkinStore>((set, get) => ({
 		} catch (error: any) {
 			throw new Error(error.response?.data?.detail || "Failed to purchase skin");
 		}
+	},
+	
+	// Обновить скин во всех списках; если он активный — сразу применить (все страницы читают activeSkin)
+	replaceSkin: (skin: Skin) => {
+		const swap = (list: Skin[]) => list.map((s) => (s.id === skin.id ? skin : s));
+		const { activeSkin } = get();
+		const isActive = activeSkin?.id === skin.id;
+		set((state) => ({
+			availableSkins: swap(state.availableSkins),
+			mySkins: swap(state.mySkins),
+			activeSkin: isActive ? skin : state.activeSkin,
+		}));
+		if (isActive) applySkinCSS(skin);
+	},
+	
+	uploadSkinBanner: async (skinId, slot, file, onProgress) => {
+		const formData = new FormData();
+		formData.append("file", file);
+		const response = await axiosInstance.post(`/skins/${skinId}/banners/${slot}`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+			onUploadProgress: (event) => {
+				if (onProgress && event.total) {
+					onProgress(Math.round((event.loaded * 100) / event.total));
+				}
+			},
+		});
+		const skin: Skin = response.data;
+		get().replaceSkin(skin);
+		return skin;
+	},
+	
+	resetSkinBanner: async (skinId, slot) => {
+		const response = await axiosInstance.delete(`/skins/${skinId}/banners/${slot}`);
+		const skin: Skin = response.data;
+		get().replaceSkin(skin);
+		return skin;
 	},
 	
 	uploadSkinImage: async (file: File) => {
