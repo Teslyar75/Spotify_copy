@@ -38,7 +38,7 @@ const MainLayout = () => {
 				{/* Main content */}
 				<main
 					key={location.pathname}
-					className="flex-1 min-w-0 flex flex-col overflow-hidden page-transition-enter"
+					className="flex-1 min-w-0 flex flex-col overflow-y-auto page-transition-enter"
 				>
 					<Outlet />
 				</main>
