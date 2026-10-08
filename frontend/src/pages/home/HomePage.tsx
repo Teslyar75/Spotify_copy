@@ -59,7 +59,7 @@ const HomePage = () => {
 	};
 
 	return (
-		<main className="flex-1 flex flex-col min-h-0 bg-spotify-charcoal overflow-hidden w-full max-w-full">
+		<main className="flex-1 flex flex-col min-h-0 min-w-0 bg-spotify-charcoal overflow-hidden w-full max-w-full">
 		{/* Header с фоновой картинкой */}
 		<div className="relative h-[220px] min-h-[220px] sm:h-[260px] sm:min-h-[260px] md:h-[300px] md:min-h-[300px] lg:h-[332px] lg:min-h-[332px] overflow-hidden w-full">
 			{/* Фоновое изображение */}

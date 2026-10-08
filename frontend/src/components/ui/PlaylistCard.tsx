@@ -42,7 +42,7 @@ const PlaylistCard = ({ playlist, onDeleted, onPlay }: Props) => {
 
   return (
     <div
-      className="group relative p-4 rounded-lg bg-white/5 hover:bg-white/10 transition cursor-pointer"
+      className="group relative min-w-0 p-4 rounded-lg bg-white/5 hover:bg-white/10 transition cursor-pointer"
       onClick={() => onPlay(playlist)}
     >
       <div className="aspect-square bg-gradient-to-br from-indigo-500 to-purple-600 rounded mb-3 flex items-center justify-center">

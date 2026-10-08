@@ -16,7 +16,7 @@ const FeaturedSection = () => {
 	return (
 		<div className='mb-8'>
 			<h2 className='text-xl font-bold mb-4'>Featured</h2>
-			<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+			<div className="track-card-grid">
 				{featured.map((song, index) => (
 					<div
 						key={song.id}

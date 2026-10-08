@@ -130,7 +130,7 @@ const SearchPage = () => {
 		results.artists.length > 0;
 
 	return (
-		<main className="flex flex-1 flex-col min-h-0 overflow-hidden bg-spotify-charcoal">
+		<main className="flex flex-1 flex-col min-h-0 min-w-0 overflow-hidden bg-spotify-charcoal">
 			<div className="relative h-[260px] min-h-[260px] sm:h-[300px] sm:min-h-[300px] md:h-[360px] md:min-h-[360px] lg:h-[400px] lg:min-h-[400px] overflow-hidden">
 			{/* Фоновое изображение */}
 			<img
@@ -330,12 +330,12 @@ const SearchPage = () => {
 									<h2 className="mb-3 text-base font-bold text-white sm:text-lg">
 										All albums
 									</h2>
-									<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
+									<div className="track-card-grid">
 										{albums.map((album) => (
 											<Link
 												key={album.id}
 												to={`/albums/${album.id}`}
-												className="group block rounded-lg bg-white/5 p-3 transition-colors hover:bg-white/10 sm:p-4"
+												className="group block min-w-0 rounded-lg bg-white/5 p-3 transition-colors hover:bg-white/10 sm:p-4"
 											>
 												<div className="relative mb-3">
 													<img
@@ -432,12 +432,12 @@ const SearchPage = () => {
 										Albums
 									</h2>
 
-									<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
+									<div className="track-card-grid">
 										{results.albums.map((album) => (
 											<Link
 												key={album.id}
 												to={`/albums/${album.id}`}
-												className="group block rounded-lg bg-white/5 p-3 transition-colors hover:bg-white/10 sm:p-4"
+												className="group block min-w-0 rounded-lg bg-white/5 p-3 transition-colors hover:bg-white/10 sm:p-4"
 											>
 												<div className="relative mb-3">
 													<img
@@ -476,11 +476,11 @@ const SearchPage = () => {
 										Artists
 									</h2>
 
-									<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
+									<div className="track-card-grid">
 										{results.artists.map((artist) => (
 											<div
 												key={artist.name}
-												className="group rounded-lg bg-white/5 p-3 text-center transition-colors hover:bg-white/10 sm:p-4"
+												className="group min-w-0 rounded-lg bg-white/5 p-3 text-center transition-colors hover:bg-white/10 sm:p-4"
 											>
 												<div className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 sm:h-28 sm:w-28 md:h-32 md:w-32">
 													<User className="h-12 w-12 text-white/80 sm:h-14 sm:w-14 md:h-16 md:w-16" />

@@ -123,11 +123,11 @@ const JamendoRecommendations = () => {
 				</div>
 			</div>
 
-			<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+			<div className="track-card-grid">
 				{displayTracks.slice(0, 10).map((track) => (
 					<div
 						key={track.id}
-						className="group bg-white/5 hover:bg-white/10 rounded-lg p-3 transition-colors cursor-pointer"
+						className="group min-w-0 bg-white/5 hover:bg-white/10 rounded-lg p-3 transition-colors cursor-pointer"
 						onClick={() => {
 							const songs = displayTracks.map(jamendoToSong);
 							const index = displayTracks.findIndex((t) => t.id === track.id);
