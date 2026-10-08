@@ -25,6 +25,7 @@ from app.database import get_db
 from app.dependencies import get_admin_user_id, get_optional_user_id
 from app.models.track import Track
 from app.models.jamendo_shown import JamendoShown
+from app.skin_music_themes import get_tags_for_skin
 from datetime import datetime, timedelta
 import random
 
@@ -357,27 +358,35 @@ def _mark_tracks_as_shown(db: Session, user_id: UUID | None, track_ids: list[str
 def discover_jamendo_tracks(
     limit: int = Query(40, ge=1, le=100),
     rotate: bool = Query(False, description="Принудительная ротация — показать другие треки"),
+    skin_name: str = Query("Стандартный", description="Название активного скина для тематических рекомендаций"),
     user_id: UUID | None = Depends(get_optional_user_id),
     db: Session = Depends(get_db),
 ):
     """
-    Discover Jamendo треки с ротацией.
+    Discover Jamendo треки с ротацией и тематическими рекомендациями.
     
     Возвращает:
     - new_for_you: треки, которые пользователь ещё не видел
     - already_shown: треки, которые уже показывались (с маркером)
+    - theme_tags: теги, использованные для поиска
+    - used_fallback: был ли использован fallback (мало треков по основным тегам)
     
     Каждый визит/refresh показывает разные треки благодаря:
     - Варьирующемуся offset (seeded by day/session)
     - Миксу popularity/newest
     - Фильтрации по уже показанным трекам
+    - Тематическим тегам, соответствующим активному скину
     """
+    # Получаем теги для скина
+    primary_tags, fallback_tags = get_tags_for_skin(skin_name)
+    
     base_params = {
         "client_id": JAMENDO_CLIENT_ID,
         "format": "json",
         "audioformat": "mp31",
         "imagesize": 300,
         "type": "albumtrack single",
+        "fuzzytags": primary_tags,  # Тематические теги скина
     }
     
     imported_ids = _get_imported_jamendo_ids(db)
@@ -410,6 +419,21 @@ def discover_jamendo_tracks(
     
     # Объединяем и перемешиваем
     all_tracks = popular_tracks + newest_tracks
+    
+    # Проверяем, достаточно ли треков. Если мало — fallback на более широкие теги
+    used_fallback = False
+    if len(all_tracks) < limit // 2:
+        # Пробуем fallback теги
+        fallback_params = {**base_params, "fuzzytags": fallback_tags}
+        fallback_popular = _collect_unimported_tracks(
+            {**fallback_params, "order": "popularity_month"}, {}, imported_ids, half_limit, start_offset=random_offset
+        )
+        fallback_newest = _collect_unimported_tracks(
+            {**fallback_params, "order": "releasedate_desc"}, {}, imported_ids, half_limit, start_offset=random_offset
+        )
+        all_tracks.extend(fallback_popular + fallback_newest)
+        used_fallback = True
+    
     random.shuffle(all_tracks)
     
     # Разделяем на "новое" и "уже показано"
@@ -436,4 +460,7 @@ def discover_jamendo_tracks(
         "already_shown": already_shown,
         "total_new": len(new_for_you),
         "total_shown": len(already_shown),
+        "theme_tags": fallback_tags if used_fallback else primary_tags,
+        "used_fallback": used_fallback,
+        "skin_name": skin_name,
     }

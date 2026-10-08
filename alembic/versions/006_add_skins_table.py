@@ -134,21 +134,22 @@ def upgrade() -> None:
     op.create_index(op.f('ix_stakes_target_type'), 'stakes', ['target_type'], unique=False)
     op.create_index(op.f('ix_stakes_target_id'), 'stakes', ['target_id'], unique=False)
     
-    # Создаём встроенные preset-скины (без изображений, будут добавлены позже)
+    # Создаём встроенные preset-скины (Стандартный — первый в списке, default для новых пользователей)
     op.execute("""
         INSERT INTO skins (name, description, banner_url, background_url, thumbnail_url, button_style, accent_color, accent_secondary, animation_type, is_public, is_preset, price_stars, owner_id)
         VALUES 
-            ('Классический Spotify', 'Стандартная тёмная тема с зелёными акцентами', NULL, NULL, NULL, 'round', '#1DB954', '#1ed760', 'none', true, true, 0, NULL),
-            ('Неоновая Ночь', 'Яркие неоновые цвета и минималистичные контуры', NULL, NULL, NULL, 'outline', '#00FFFF', '#FF00FF', 'gradient-blobs', true, true, 0, NULL),
-            ('Ретро Волны', 'Стиль синтвейв с пульсирующей анимацией', NULL, NULL, NULL, 'pill', '#FF6EC7', '#7B2CBF', 'waveform', true, true, 0, NULL),
+            ('Стандартный', 'Чистый нейтральный дизайн без тематического оформления', NULL, NULL, NULL, 'round', '#1DB954', '#1ed760', 'none', true, true, 0, NULL),
+            ('Классический Spotify', 'Тёмная тема с зелёными акцентами', NULL, NULL, NULL, 'round', '#1DB954', '#1ed760', 'none', true, true, 0, NULL),
+            ('Неоновая Ночь', 'Киберпанк с неоновыми контурами', NULL, NULL, NULL, 'outline', '#00FFFF', '#FF00FF', 'gradient-blobs', true, true, 0, NULL),
+            ('Ретро Волны', 'Синтвейв стиль с пульсирующей анимацией', NULL, NULL, NULL, 'pill', '#FF6EC7', '#7B2CBF', 'waveform', true, true, 0, NULL),
             ('Минимализм', 'Чистый дизайн без отвлекающих элементов', NULL, NULL, NULL, 'minimal', '#FFFFFF', '#E0E0E0', 'particles', true, true, 0, NULL),
-            ('Космос', 'Тёмные оттенки фиолетового с звёздами', NULL, NULL, NULL, 'round', '#8B5CF6', '#A78BFA', 'particles', true, true, 0, NULL),
-            ('Закат', 'Тёплые оранжевые и розовые тона', NULL, NULL, NULL, 'pill', '#FF6B6B', '#FFB347', 'gradient-blobs', true, true, 0, NULL),
-            ('Броня гения', 'Красно-золотой tech HUD с сиянием дугового реактора', NULL, NULL, NULL, 'square', '#C41E3A', '#FFD700', 'particles', true, true, 0, NULL),
-            ('Ночной паутинщик', 'Красно-синяя городская ночь с паутинным узором', NULL, NULL, NULL, 'outline', '#DC143C', '#1E90FF', 'gradient-blobs', true, true, 0, NULL),
-            ('Бейкер-стрит', 'Викторианский Лондон в тумане, кабинет 221B', NULL, NULL, NULL, 'round', '#8B4513', '#2F4F4F', 'none', true, true, 0, NULL),
-            ('Викинги', 'Северный фьорд, драккары, резьба по дереву и руны', NULL, NULL, NULL, 'square', '#4682B4', '#708090', 'waveform', true, true, 0, NULL),
-            ('Железный трон', 'Тёмный средневековый замок, текстуры камня и железа', NULL, NULL, NULL, 'minimal', '#2C2C2C', '#8B0000', 'particles', true, true, 0, NULL)
+            ('Космос', 'Звёздное пространство с фиолетовыми оттенками', NULL, NULL, NULL, 'round', '#8B5CF6', '#A78BFA', 'particles', true, true, 0, NULL),
+            ('Закат', 'Тёплые оранжево-розовые тона', NULL, NULL, NULL, 'pill', '#FF6B6B', '#FFB347', 'gradient-blobs', true, true, 0, NULL),
+            ('Броня гения', 'Красно-золотой tech HUD', NULL, NULL, NULL, 'square', '#C41E3A', '#FFD700', 'particles', true, true, 0, NULL),
+            ('Ночной паутинщик', 'Красно-синий городской пейзаж', NULL, NULL, NULL, 'outline', '#DC143C', '#1E90FF', 'gradient-blobs', true, true, 0, NULL),
+            ('Бейкер-стрит', 'Викторианский детектив', NULL, NULL, NULL, 'round', '#8B4513', '#2F4F4F', 'none', true, true, 0, NULL),
+            ('Викинги', 'Северные фьорды и драккары', NULL, NULL, NULL, 'square', '#4682B4', '#708090', 'waveform', true, true, 0, NULL),
+            ('Железный трон', 'Средневековый замок', NULL, NULL, NULL, 'minimal', '#2C2C2C', '#8B0000', 'particles', true, true, 0, NULL)
     """)
 
 
