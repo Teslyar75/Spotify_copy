@@ -35,12 +35,18 @@ class AuthUser(Base):
 
     # Никогда не храним plain text пароль!
     # Здесь только bcrypt-хеш: $2b$12$...
-    password_hash = Column(String(255), nullable=False)
+    # nullable=True для OAuth users (у них нет пароля)
+    password_hash = Column(String(255), nullable=True)
 
     # Сохраняем желаемый username при регистрации.
     # Используется функцией _ensure_profile для создания UserProfile.
     # nullable=True — для обратной совместимости со старыми записями без этого поля.
     initial_username = Column(String(50), nullable=True)
+    
+    # Google OAuth поля
+    google_sub = Column(String(255), unique=True, nullable=True, index=True)  # Google Subject ID
+    auth_provider = Column(String(50), nullable=True, server_default='password')  # 'password' or 'google'
+    avatar_url = Column(String(500), nullable=True)  # Google profile picture URL
 
     # server_default=func.now() — PostgreSQL автоматически проставляет текущее время
     # при INSERT. Python не участвует, значит нет проблем с timezone.

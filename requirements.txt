@@ -6,6 +6,7 @@ alembic>=1.13.0
 psycopg2-binary>=2.9.9
 python-dotenv>=1.0.0
 python-jose[cryptography]>=3.3.0
+PyJWT[crypto]>=2.8.0
 bcrypt>=4.0.0
 python-multipart>=0.0.6
 websockets>=12.0

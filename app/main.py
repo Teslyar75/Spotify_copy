@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from fastapi.staticfiles import StaticFiles
 
-from app.routes import auth, songs, albums, users, websocket, playlists, seed, search, player, recommendations, upload, jamendo, skins
+from app.routes import auth, songs, albums, users, websocket, playlists, seed, search, player, recommendations, upload, jamendo, skins, google_auth
 
 # Создаём экземпляр FastAPI — это и есть всё приложение.
 # title отображается в Swagger-документации на /docs
@@ -50,6 +50,7 @@ app.add_middleware(
 # prefix задаёт общий URL-префикс для всех эндпоинтов роутера.
 # tags — группировка в Swagger-документации.
 app.include_router(auth.router,            prefix="/api/auth",            tags=["Auth"])
+app.include_router(google_auth.router,     prefix="/api/auth/google",     tags=["Google Auth"])
 app.include_router(songs.router,           prefix="/api/songs",           tags=["Songs"])
 app.include_router(albums.router,          prefix="/api/albums",          tags=["Albums"])
 app.include_router(users.router,           prefix="/api/users",           tags=["Users"])
