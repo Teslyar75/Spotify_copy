@@ -49,6 +49,7 @@ function applySkinCSS(skin: Skin | null) {
 		root.style.setProperty('--skin-banner', 'none');
 		root.style.setProperty('--skin-background', 'none');
 		root.style.setProperty('--button-style', 'round');
+		localStorage.removeItem('guest_active_skin');
 		return;
 	}
 	
@@ -109,7 +110,13 @@ export const useSkinStore = create<SkinStore>((set, get) => ({
 	fetchActiveSkin: async () => {
 		try {
 			const response = await axiosInstance.get("/skins/active");
-			const skin = response.data;
+			let skin = response.data;
+			// server returns null for guests AND for expired/stale tokens (no 401 here),
+			// so restore the last skin applied in this browser; choosing the default clears it
+			if (!skin) {
+				const savedSkin = localStorage.getItem('guest_active_skin');
+				if (savedSkin) skin = JSON.parse(savedSkin);
+			}
 			set({ activeSkin: skin });
 			applySkinCSS(skin);
 		} catch (error) {

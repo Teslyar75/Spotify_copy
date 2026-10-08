@@ -8,7 +8,7 @@
 """
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
 from sqlalchemy.orm import relationship
 
 from app.database import Base
