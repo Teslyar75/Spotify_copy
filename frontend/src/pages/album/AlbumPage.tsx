@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Play, Pause, Heart } from "lucide-react";
 import Topbar from "@/components/Topbar";
 import { Album, Song } from "@/types";
+import { useSkinStore } from "@/stores/useSkinStore";
 
 const AlbumPage = () => {
 	const { albumId } = useParams<{ albumId: string }>();
@@ -16,6 +17,7 @@ const AlbumPage = () => {
 	const { currentSong, isPlaying, togglePlay, playAlbum } = usePlayerStore();
 	const { openArtist } = useArtistStore();
 	const { saveAlbum, removeAlbum, isAlbumSaved, likeSong, unlikeSong, isSongLiked } = useLibraryStore();
+	const { activeSkin } = useSkinStore();
 	const [album, setAlbum] = useState<Album | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -71,12 +73,12 @@ const AlbumPage = () => {
 	return (
 		<main className="flex flex-1 flex-col min-h-0 overflow-hidden bg-spotify-charcoal">
 		<div className="relative h-[260px] min-h-[260px] sm:h-[320px] sm:min-h-[320px] md:h-[360px] md:min-h-[360px] lg:h-[420px] lg:min-h-[420px] overflow-hidden">
-			{/* Фоновое изображение */}
-			<img
-				src="/album-header-bg.png"
-				alt=""
-				className="absolute inset-0 h-full w-full object-cover object-center"
-			/>
+		{/* Фоновое изображение */}
+		<img
+			src={activeSkin?.banners?.player || activeSkin?.banner_url || "/album-header-bg.png"}
+			alt=""
+			className="absolute inset-0 h-full w-full object-cover object-center"
+		/>
 			{/* Тёмный градиент поверх — для читаемости текста */}
 			<div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-spotify-charcoal" />
 

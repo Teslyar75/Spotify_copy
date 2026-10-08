@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Play, Search, User, Heart, Loader2 } from "lucide-react";
 import { Song, Album } from "@/types";
 import { axiosInstance } from "@/lib/axios";
+import { useSkinStore } from "@/stores/useSkinStore";
 
 // Маппинг кнопок жанров на значения для API (совпадает с Jamendo tags)
 const GENRE_MAP: Record<string, string> = {
@@ -35,6 +36,7 @@ const SearchPage = () => {
 	const { playAlbum, setCurrentSong } = usePlayerStore();
 	const { likeSong, unlikeSong, isSongLiked } = useLibraryStore();
 	const { albums, fetchAlbums } = useMusicStore();
+	const { activeSkin } = useSkinStore();
 
 	const [results, setResults] = useState<{
 		tracks: Song[];
@@ -130,12 +132,12 @@ const SearchPage = () => {
 	return (
 		<main className="flex flex-1 flex-col min-h-0 overflow-hidden bg-spotify-charcoal">
 			<div className="relative h-[260px] min-h-[260px] sm:h-[300px] sm:min-h-[300px] md:h-[360px] md:min-h-[360px] lg:h-[400px] lg:min-h-[400px] overflow-hidden">
-				{/* Фоновое изображение */}
-				<img
-					src="/search-header-bg.png"
-					alt=""
-					className="absolute inset-0 h-full w-full object-cover object-top"
-				/>
+			{/* Фоновое изображение */}
+			<img
+				src={activeSkin?.banners?.search || activeSkin?.banner_url || "/search-header-bg.png"}
+				alt=""
+				className="absolute inset-0 h-full w-full object-cover object-top"
+			/>
 				{/* Тёмный градиент поверх фото */}
 				<div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-spotify-charcoal" />
 

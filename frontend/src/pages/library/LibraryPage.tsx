@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Playlist, Album } from "@/types";
 import { axiosInstance } from "@/lib/axios";
+import { useSkinStore } from "@/stores/useSkinStore";
 import { Heart, BookOpen, Disc3 } from "lucide-react";
 import PlaylistCard from "@/components/ui/PlaylistCard";
 import { Play, Pencil, Trash2 } from "lucide-react";
@@ -23,6 +24,7 @@ const LibraryPage = () => {
 	const { playAlbum, setCurrentSong} = usePlayerStore();
 	const { fetchAlbums, albums } = useMusicStore();
   const { savedAlbums, likedSongs, removeAlbum, unlikeSong } = useLibraryStore();
+	const { activeSkin } = useSkinStore();
 
 	useEffect(() => {
 		const loadPlaylists = async () => {
@@ -71,12 +73,12 @@ const LibraryPage = () => {
 	return (
 		<main className="flex flex-1 flex-col min-h-0 overflow-hidden bg-spotify-charcoal">
 		<div className="relative h-[260px] min-h-[260px] sm:h-[300px] sm:min-h-[300px] md:h-[360px] md:min-h-[360px] lg:h-[400px] lg:min-h-[400px] overflow-hidden">
-			{/* Фоновое изображение */}
-			<img
-				src="/library-header-bg.png"
-				alt=""
-				className="absolute inset-0 h-full w-full object-cover object-top"
-			/>
+		{/* Фоновое изображение */}
+		<img
+			src={activeSkin?.banners?.library || activeSkin?.banner_url || "/library-header-bg.png"}
+			alt=""
+			className="absolute inset-0 h-full w-full object-cover object-top"
+		/>
 			{/* Тёмный градиент поверх фото */}
 			<div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-spotify-charcoal" />
 

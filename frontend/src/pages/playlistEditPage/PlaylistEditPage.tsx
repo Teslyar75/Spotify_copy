@@ -10,12 +10,14 @@ import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useLibraryStore } from "@/stores/useLibraryStore";
 import { Song } from "@/types";
 import { Search, Plus, Check, X, Play, Pause, Heart } from "lucide-react";
+import { useSkinStore } from "@/stores/useSkinStore";
 
 const PlaylistEditPage = () => {
   const { id: playlistId } = useParams();
   const { search } = useMusicStore();
   const { currentSong, isPlaying, togglePlay, playAlbum } = usePlayerStore();
   const { likeSong, unlikeSong, isSongLiked } = useLibraryStore();
+  const { activeSkin } = useSkinStore();
 
   const [playlist, setPlaylist] = useState<{ id: string; title: string; tracks: Song[] } | null>(null);
   const [query, setQuery] = useState("");
@@ -126,7 +128,7 @@ const PlaylistEditPage = () => {
     <main className="flex flex-1 flex-col min-h-0 overflow-hidden bg-spotify-charcoal">
       <Topbar />
       <div className="relative h-[260px] min-h-[260px] sm:h-[320px] sm:min-h-[320px] md:h-[360px] md:min-h-[360px] lg:h-[420px] lg:min-h-[420px] overflow-hidden">
-        <img src="/album-header-bg.png" alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
+        <img src={activeSkin?.banners?.player || activeSkin?.banner_url || "/album-header-bg.png"} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-spotify-charcoal" />
         <div className="absolute bottom-0 left-0 right-0 z-10 px-4 pb-5 sm:px-5 md:px-6 md:pb-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-5 lg:gap-6">
