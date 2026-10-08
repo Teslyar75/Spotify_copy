@@ -29,6 +29,13 @@
 		--border: 0 0% 18%;
 		--ring: var(--spotify-green);
 		--radius: 0.5rem;
+		
+		/* Skin variables (динамически устанавливаются через JS) */
+		--skin-accent: #1DB954;
+		--skin-accent-secondary: #1ed760;
+		--skin-banner: none;
+		--skin-background: none;
+		--button-style: round;
 	}
 }
 
