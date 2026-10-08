@@ -274,6 +274,59 @@ http://<IP>:3000
 
 ---
 
+## Google OAuth 2.0 / OpenID Connect
+
+**Настройка входа через Google:**
+
+### 1. Создание OAuth Client в Google Cloud Console
+
+1. Откройте [Google Cloud Console](https://console.cloud.google.com/)
+2. Создайте новый проект или выберите существующий
+3. Перейдите в **APIs & Services → OAuth consent screen**
+   - User Type: **External**
+   - App name: LobStars (или название вашего приложения)
+   - User support email: ваш email
+   - Developer contact: ваш email
+   - Сохраните и перейдите к **Scopes**
+4. Добавьте тестовых пользователей (только они смогут входить пока статус Testing):
+   - **Test users → Add Users**
+   - Добавьте свои Google аккаунты для тестирования
+5. Перейдите в **Credentials → Create Credentials → OAuth 2.0 Client ID**
+   - Application type: **Web application**
+   - Name: LobStars Web Client
+   - **Authorized JavaScript origins**: `http://localhost:3000`
+   - **Authorized redirect URIs**: `http://localhost:3000/api/auth/google/callback`
+   - Нажмите **Create**
+6. Скопируйте **Client ID** и **Client secret**
+
+### 2. Настройка переменных окружения
+
+Создайте файл `.env` в корне проекта (скопируйте из `.env.example`):
+
+```bash
+GOOGLE_CLIENT_ID=ваш-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=ваш-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
+```
+
+**⚠️ Важно:** `.env` добавлен в `.gitignore` — не коммитьте секреты в репозиторий!
+
+### 3. Запуск приложения
+
+```bash
+docker-compose up --build
+```
+
+Кнопка **«Войти через Google»** появится автоматически на страницах входа и регистрации.
+
+### 4. Линковка с существующими аккаунтами
+
+При входе через Google:
+- Если email уже зарегистрирован через пароль → аккаунт автоматически линкуется с Google
+- Если это новый email → создаётся новый пользователь с бонусом 100 звёзд
+
+---
+
 ## Лицензия
 
 MIT License — используйте свободно, но на свой риск.

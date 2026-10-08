@@ -13,6 +13,7 @@ import NewPlaylistPage from "./pages/AddPlaylist/AddPlaylistPage";
 import PlaylistEditPage from "./pages/playlistEditPage/PlaylistEditPage";
 import ProjectPresentation from "./pages/presentation/PresentationPage";
 import SkinsPage from "./pages/skins/SkinsPage";
+import GoogleCallbackPage from "./pages/auth/GoogleCallbackPage";
 import { useEffect } from "react";
 import { useSkinStore } from "./stores/useSkinStore";
 
@@ -31,6 +32,10 @@ function App() {
 				<Route
 					path='/login'
 					element={isAuthenticated ? <Navigate to='/' /> : <LoginPage />}
+				/>
+				<Route
+					path='/auth/google/done'
+					element={<GoogleCallbackPage />}
 				/>
 				<Route element={<MainLayout />}>
 					<Route
