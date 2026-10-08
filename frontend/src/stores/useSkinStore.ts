@@ -16,6 +16,12 @@ export interface Skin {
 	is_public: boolean;
 	is_preset: boolean;
 	price_stars?: number;
+	banners?: {
+		home?: string;
+		search?: string;
+		library?: string;
+		player?: string;
+	};
 }
 
 interface SkinStore {
