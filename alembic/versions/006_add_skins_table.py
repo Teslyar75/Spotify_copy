@@ -142,14 +142,17 @@ def upgrade() -> None:
             ('Классический Spotify', 'Тёмная тема с зелёными акцентами', NULL, NULL, NULL, 'round', '#1DB954', '#1ed760', 'none', true, true, 0, NULL),
             ('Неоновая Ночь', 'Киберпанк с неоновыми контурами', NULL, NULL, NULL, 'outline', '#00FFFF', '#FF00FF', 'gradient-blobs', true, true, 0, NULL),
             ('Ретро Волны', 'Синтвейв стиль с пульсирующей анимацией', NULL, NULL, NULL, 'pill', '#FF6EC7', '#7B2CBF', 'waveform', true, true, 0, NULL),
-            ('Минимализм', 'Чистый дизайн без отвлекающих элементов', NULL, NULL, NULL, 'minimal', '#FFFFFF', '#E0E0E0', 'particles', true, true, 0, NULL),
-            ('Космос', 'Звёздное пространство с фиолетовыми оттенками', NULL, NULL, NULL, 'round', '#8B5CF6', '#A78BFA', 'particles', true, true, 0, NULL),
-            ('Закат', 'Тёплые оранжево-розовые тона', NULL, NULL, NULL, 'pill', '#FF6B6B', '#FFB347', 'gradient-blobs', true, true, 0, NULL),
-            ('Броня гения', 'Красно-золотой tech HUD', NULL, NULL, NULL, 'square', '#C41E3A', '#FFD700', 'particles', true, true, 0, NULL),
-            ('Ночной паутинщик', 'Красно-синий городской пейзаж', NULL, NULL, NULL, 'outline', '#DC143C', '#1E90FF', 'gradient-blobs', true, true, 0, NULL),
-            ('Бейкер-стрит', 'Викторианский детектив', NULL, NULL, NULL, 'round', '#8B4513', '#2F4F4F', 'none', true, true, 0, NULL),
-            ('Викинги', 'Северные фьорды и драккары', NULL, NULL, NULL, 'square', '#4682B4', '#708090', 'waveform', true, true, 0, NULL),
-            ('Железный трон', 'Средневековый замок', NULL, NULL, NULL, 'minimal', '#2C2C2C', '#8B0000', 'particles', true, true, 0, NULL)
+            ('Минимализм', 'Чистый дизайн без отвлекающих элементов', '/skins/minimalism_banner.webp', '/skins/minimalism_bg.webp', NULL, 'minimal', '#F5F5F5', '#E0E0E0', 'particles', true, true, 0, NULL),
+            ('Космос', 'Звёздное пространство с фиолетовыми оттенками', '/skins/cosmos_banner.webp', '/skins/cosmos_bg.webp', NULL, 'round', '#8B5CF6', '#A78BFA', 'particles', true, true, 0, NULL),
+            ('Закат', 'Тёплые оранжево-розовые тона', '/skins/sunset_banner.webp', '/skins/sunset_bg.webp', NULL, 'pill', '#FF6B6B', '#FFB347', 'gradient-blobs', true, true, 0, NULL),
+            ('Броня гения', 'Красно-золотой tech HUD', '/skins/irontech_banner.webp', '/skins/irontech_bg.webp', NULL, 'square', '#C41E3A', '#FFD700', 'particles', true, true, 0, NULL),
+            ('Ночной паутинщик', 'Красно-синий городской пейзаж', '/skins/spider_banner.webp', '/skins/spider_bg.webp', NULL, 'outline', '#8B0000', '#4682B4', 'gradient-blobs', true, true, 0, NULL),
+            ('Бейкер-стрит', 'Викторианский детектив', '/skins/baker_banner.webp', '/skins/baker_bg.webp', NULL, 'round', '#FFBF00', '#8B4513', 'none', true, true, 0, NULL),
+            ('Викинги', 'Северные фьорды и драккары', '/skins/vikings_banner.webp', '/skins/vikings_bg.webp', NULL, 'square', '#4682B4', '#708090', 'waveform', true, true, 0, NULL),
+            ('Железный трон', 'Средневековый замок', '/skins/thrones_banner.webp', '/skins/thrones_bg.webp', NULL, 'minimal', '#2C2C2C', '#8B0000', 'particles', true, true, 0, NULL),
+            ('Звёздный флот', 'Исследование далёких галактик', '/skins/starfleet_banner.webp', '/skins/starfleet_bg.webp', NULL, 'pill', '#4169E1', '#1E90FF', 'particles', true, true, 0, NULL),
+            ('Менталист', 'Тёплый минимализм с чайным настроением', '/skins/mentalist_banner.webp', '/skins/mentalist_bg.webp', NULL, 'minimal', '#D4A76A', '#8B7355', 'none', true, true, 0, NULL),
+            ('Косплей', 'Яркие цвета аниме-конвенций', '/skins/cosplay_banner.webp', '/skins/cosplay_bg.webp', NULL, 'round', '#FF1493', '#00CED1', 'gradient-blobs', true, true, 0, NULL)
     """)
 
 

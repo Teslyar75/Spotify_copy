@@ -77,14 +77,14 @@ const LeftSidebar = () => {
 										<p className="text-sm font-medium truncate text-white">{album.title}</p>
 										<p className="text-xs text-spotify-text-muted truncate">{album.artist}</p>
 									</div>
-									<Button
-										variant="ghost"
-										size="icon"
-										className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 rounded-full bg-spotify-green hover:bg-spotify-green-hover text-black shrink-0"
-										onClick={(e) => handlePlayAlbum(e, album.songs)}
-									>
-										<Play className="h-4 w-4 ml-0.5" fill="currentColor" />
-									</Button>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 rounded-full skin-accent-bg text-white shrink-0"
+									onClick={(e) => handlePlayAlbum(e, album.songs)}
+								>
+									<Play className="h-4 w-4 ml-0.5" fill="currentColor" />
+								</Button>
 								</Link>
 							))}
 						</div>

@@ -10,7 +10,7 @@ id совпадает с auth_users.id (паттерн Shared Primary Key для
     - В будущем можно добавить OAuth без затрагивания логики профилей
 """
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, func
+from sqlalchemy import Column, DateTime, ForeignKey, String, Integer, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
 
