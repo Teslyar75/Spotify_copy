@@ -7,7 +7,7 @@
 В будущем добавится marketplace где дизайнеры смогут продавать скины.
 """
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
 

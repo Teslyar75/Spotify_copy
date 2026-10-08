@@ -104,3 +104,53 @@
 	-ms-overflow-style: none;
 	scrollbar-width: none;
 }
+
+/* Динамические стили кнопок на основе скинов */
+.skin-button {
+	background-color: var(--skin-accent, #1DB954);
+	color: white;
+}
+.skin-button:hover {
+	background-color: var(--skin-accent-secondary, #1ed760);
+}
+
+/* Варианты button-style */
+[style*="--button-style: round"] .skin-button {
+	border-radius: 9999px; /* rounded-full */
+}
+[style*="--button-style: square"] .skin-button {
+	border-radius: 0.25rem; /* rounded */
+}
+[style*="--button-style: pill"] .skin-button {
+	border-radius: 1.5rem; /* rounded-3xl */
+}
+[style*="--button-style: outline"] .skin-button {
+	background-color: transparent;
+	border: 2px solid var(--skin-accent, #1DB954);
+	color: var(--skin-accent, #1DB954);
+}
+[style*="--button-style: outline"] .skin-button:hover {
+	background-color: var(--skin-accent, #1DB954);
+	color: white;
+}
+[style*="--button-style: minimal"] .skin-button {
+	background-color: transparent;
+	color: var(--skin-accent, #1DB954);
+}
+[style*="--button-style: minimal"] .skin-button:hover {
+	background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Accent цвета для ссылок, иконок и других элементов */
+.skin-accent-text {
+	color: var(--skin-accent, #1DB954);
+}
+.skin-accent-text:hover {
+	color: var(--skin-accent-secondary, #1ed760);
+}
+.skin-accent-bg {
+	background-color: var(--skin-accent, #1DB954);
+}
+.skin-accent-bg:hover {
+	background-color: var(--skin-accent-secondary, #1ed760);
+}

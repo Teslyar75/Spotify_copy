@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import SectionGrid from "./components/SectionGrid";
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { Song } from "@/types";
+import JamendoRecommendations from "./components/JamendoRecommendations";
 
 const HomePage = () => {
 	const {
@@ -104,6 +105,9 @@ const HomePage = () => {
 							songs={trendingSongs} 
 							isLoading={isLoading} 
 						/>
+
+						{/* Jamendo Recommendations */}
+						<JamendoRecommendations />
 
 						{Object.entries(tracksByGenre).map(([genre, songs]) => (
 							<SectionGrid

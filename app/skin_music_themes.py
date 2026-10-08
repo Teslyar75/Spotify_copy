@@ -19,6 +19,9 @@ SKIN_MUSIC_TAGS = {
     "Бейкер-стрит": "classical jazz acoustic instrumental",  # Классическая/джаз для детектива
     "Викинги": "folk epic ambient soundtrack",  # Народная/эпическая для северной темы
     "Железный трон": "orchestral cinematic epic soundtrack",  # Оркестровая/эпическая для средневековья
+    "Звёздный флот": "electronic space ambient soundtrack",  # Космическая/научно-фантастическая
+    "Менталист": "jazz acoustic instrumental ambient",  # Детективная/минималистичная
+    "Косплей": "anime jpop electronic dance",  # Аниме/яркая поп-музыка
 }
 
 # Fallback теги если основные вернули мало треков
@@ -35,6 +38,9 @@ SKIN_MUSIC_FALLBACK = {
     "Бейкер-стрит": "jazz",
     "Викинги": "folk",
     "Железный трон": "orchestral",
+    "Звёздный флот": "electronic",
+    "Менталист": "jazz",
+    "Косплей": "electronic",
 }
 
 def get_tags_for_skin(skin_name: str) -> tuple[str, str]:

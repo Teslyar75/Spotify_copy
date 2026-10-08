@@ -46,18 +46,18 @@ const MainLayout = () => {
 				{/* Right artist rail */}
 				<aside className="hidden lg:flex w-[84px] min-w-[84px] shrink-0 border-l border-white/10 bg-black/30">
 					<div className="w-full flex flex-col items-center pt-5 px-2">
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={handleOpenArtist}
-							className={`h-12 w-12 rounded-2xl transition-all ${
-								isSidebarOpen
-									? "bg-spotify-green text-black hover:bg-spotify-green-hover"
-									: "bg-white/10 text-white hover:bg-white/20"
-							}`}
-						>
-							<User className="h-5 w-5" />
-						</Button>
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={handleOpenArtist}
+						className={`h-12 w-12 rounded-2xl transition-all ${
+							isSidebarOpen
+								? "skin-accent-bg text-white"
+								: "bg-white/10 text-white hover:bg-white/20"
+						}`}
+					>
+						<User className="h-5 w-5" />
+					</Button>
 
 						<span className="mt-2 text-[11px] leading-tight text-center text-spotify-text-muted">
 							Исполнитель
@@ -74,7 +74,7 @@ const MainLayout = () => {
 					onClick={handleOpenArtist}
 					className={`h-9 w-9 rounded-full shadow-lg transition-all ${
 						isSidebarOpen
-							? "bg-spotify-green text-black hover:bg-spotify-green-hover"
+							? "skin-accent-bg text-white"
 							: "bg-white/10 text-white hover:bg-white/20 backdrop-blur-md"
 					}`}
 				>

@@ -119,21 +119,21 @@ export const PlaybackControls = () => {
 						<Plus className="h-4 w-4" />
 					</Button>
 
-					{/* Like / Unlike */}
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => {
-							if (!currentSong) return;
-							if (isLiked) unlikeSong(currentSong.id);
-							else likeSong(currentSong);
-						}}
-						className={`h-6 w-6 ${
-							isLiked ? "text-spotify-green" : "text-spotify-text-muted hover:text-white"
-						}`}
-					>
-						<Heart className="h-4 w-4" fill="currentColor" />
-					</Button>
+				{/* Like / Unlike */}
+				<Button
+					variant="ghost"
+					size="icon"
+					onClick={() => {
+						if (!currentSong) return;
+						if (isLiked) unlikeSong(currentSong.id);
+						else likeSong(currentSong);
+					}}
+					className={`h-6 w-6 ${
+						isLiked ? "skin-accent-text" : "text-spotify-text-muted hover:text-white"
+					}`}
+				>
+					<Heart className="h-4 w-4" fill="currentColor" />
+				</Button>
 
 					{/* Modal */}
 					{currentSong && (
@@ -148,16 +148,16 @@ export const PlaybackControls = () => {
 				{/* Player Controls */}
 				<div className="flex flex-col gap-2 md:flex-1 md:max-w-[640px]">
 					<div className="flex items-center justify-center gap-1 sm:gap-2">
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={toggleShuffle}
-							className={`flex h-8 w-8 ${
-								isShuffled ? "text-spotify-green" : "text-spotify-text-muted hover:text-white"
-							}`}
-						>
-							<Shuffle className="h-4 w-4" />
-						</Button>
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={toggleShuffle}
+						className={`flex h-8 w-8 ${
+							isShuffled ? "skin-accent-text" : "text-spotify-text-muted hover:text-white"
+						}`}
+					>
+						<Shuffle className="h-4 w-4" />
+					</Button>
 
 						<Button
 							variant="ghost"
@@ -168,17 +168,17 @@ export const PlaybackControls = () => {
 							<SkipBack className="h-4 w-4 md:h-5 md:w-5" />
 						</Button>
 
-						<Button
-							size="icon"
-							onClick={togglePlay}
-							className="h-9 w-9 md:h-10 md:w-10 rounded-full bg-white hover:bg-white hover:scale-105 text-black border-0"
-						>
-							{isPlaying ? (
-								<Pause className="h-4 w-4 md:h-5 md:w-5" fill="currentColor" />
-							) : (
-								<Play className="h-4 w-4 md:h-5 md:w-5 ml-0.5" fill="currentColor" />
-							)}
-						</Button>
+					<Button
+						size="icon"
+						onClick={togglePlay}
+						className="skin-button h-9 w-9 md:h-10 md:w-10 hover:scale-105 text-white border-0"
+					>
+						{isPlaying ? (
+							<Pause className="h-4 w-4 md:h-5 md:w-5" fill="currentColor" />
+						) : (
+							<Play className="h-4 w-4 md:h-5 md:w-5 ml-0.5" fill="currentColor" />
+						)}
+					</Button>
 
 						<Button
 							variant="ghost"
@@ -189,18 +189,18 @@ export const PlaybackControls = () => {
 							<SkipForward className="h-4 w-4 md:h-5 md:w-5" />
 						</Button>
 
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={toggleRepeat}
-							className={`flex h-8 w-8 ${
-								repeatMode !== "off"
-									? "text-spotify-green"
-									: "text-spotify-text-muted hover:text-white"
-							}`}
-						>
-							{repeatMode === "one" ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
-						</Button>
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={toggleRepeat}
+						className={`flex h-8 w-8 ${
+							repeatMode !== "off"
+								? "skin-accent-text"
+								: "text-spotify-text-muted hover:text-white"
+						}`}
+					>
+						{repeatMode === "one" ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
+					</Button>
 					</div>
 
 					<div className="flex items-center gap-2 w-full">
