@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from fastapi.staticfiles import StaticFiles
 
-from app.routes import auth, songs, albums, users, websocket, playlists, seed, search, player, recommendations, upload, jamendo
+from app.routes import auth, songs, albums, users, websocket, playlists, seed, search, player, recommendations, upload, jamendo, skins
 
 # Создаём экземпляр FastAPI — это и есть всё приложение.
 # title отображается в Swagger-документации на /docs
@@ -60,6 +60,7 @@ app.include_router(player.router,          prefix="/api/player",          tags=[
 app.include_router(recommendations.router, prefix="/api/recommendations", tags=["Recommendations"])
 app.include_router(upload.router,          prefix="/api/upload",          tags=["Upload"])
 app.include_router(jamendo.router,         prefix="/api/jamendo",         tags=["Jamendo"])
+app.include_router(skins.router,           prefix="/api/skins",           tags=["Skins"])
 # WebSocket роутер монтируется без префикса — путь /ws задан прямо в роутере
 app.include_router(websocket.router,       tags=["WebSocket"])
 

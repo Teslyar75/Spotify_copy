@@ -12,9 +12,18 @@ import { useAuthStore } from "./stores/useAuthStore";
 import NewPlaylistPage from "./pages/AddPlaylist/AddPlaylistPage";
 import PlaylistEditPage from "./pages/playlistEditPage/PlaylistEditPage";
 import ProjectPresentation from "./pages/presentation/PresentationPage";
+import SkinsPage from "./pages/skins/SkinsPage";
+import { useEffect } from "react";
+import { useSkinStore } from "./stores/useSkinStore";
 
 function App() {
 	const { isAuthenticated } = useAuthStore();
+	const { fetchActiveSkin } = useSkinStore();
+	
+	// Загружаем активный скин при старте приложения
+	useEffect(() => {
+		fetchActiveSkin();
+	}, []);
 
 	return (
 		<>
@@ -35,6 +44,10 @@ function App() {
 					<Route
 						path='/library'
 						element={isAuthenticated ? <LibraryPage /> : <Navigate to='/login' />}
+					/>
+					<Route
+						path='/skins'
+						element={<SkinsPage />}
 					/>
 					<Route
   						path='/playlists/new'

@@ -47,6 +47,12 @@ class Track(Base):
     duration  = Column(Integer, nullable=False)       # длительность в секундах
     file_url  = Column(String(500), nullable=False)   # URL аудиофайла (/media/songs/... или SoundHelix)
 
+    # Поля для тотализатора (demo)
+    uploader_id = Column(PG_UUID(as_uuid=True), ForeignKey("user_profiles.id", ondelete="SET NULL"), nullable=True, index=True)
+    stake_amount = Column(Integer, nullable=False, default=0)  # Ставка загрузившего в звёздах
+    total_supports = Column(Integer, nullable=False, default=0)  # Сумма поддержки от слушателей
+    tote_status = Column(String(20), nullable=False, default="active")  # active, hit, burned
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
         DateTime(timezone=True),
@@ -62,6 +68,9 @@ class Track(Base):
     # Связь с Album (многие треки → один альбом)
     # back_populates="songs" — обратная сторона Album.songs
     album_ref = relationship("Album", back_populates="songs")
+    
+    # Загрузивший трек (для тотализатора)
+    uploader = relationship("UserProfile", foreign_keys=[uploader_id], back_populates="uploaded_tracks")
 
     # Связь с PlaylistTrack (многие-ко-многим через промежуточную таблицу)
     # cascade="all, delete-orphan" — при удалении трека удаляются записи в playlist_tracks
@@ -73,3 +82,9 @@ class Track(Base):
     listening_history = relationship(
         "ListeningHistory", back_populates="track", cascade="all, delete-orphan"
     )
+    
+    # Поддержка трека слушателями
+    supports = relationship("TrackSupport", back_populates="track", cascade="all, delete-orphan")
+    
+    # Прикреплённые скины (многие-ко-многим через TrackSkin)
+    track_skins = relationship("TrackSkin", back_populates="track", cascade="all, delete-orphan")

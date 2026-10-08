@@ -22,8 +22,12 @@ from sqlalchemy.orm import Session
 
 from app.config import JAMENDO_CLIENT_ID
 from app.database import get_db
-from app.dependencies import get_admin_user_id
+from app.dependencies import get_admin_user_id, get_optional_user_id
 from app.models.track import Track
+from app.models.jamendo_shown import JamendoShown
+from app.skin_music_themes import get_tags_for_skin
+from datetime import datetime, timedelta
+import random
 
 IMAGES_DIR = Path(__file__).resolve().parent.parent.parent / "media" / "images"
 
@@ -306,4 +310,157 @@ def import_jamendo_track(
         "artist": track.artist,
         "message": "Трек успешно импортирован",
         "already_exists": False,
+    }
+
+
+def _get_shown_jamendo_ids(db: Session, user_id: UUID | None) -> set[str]:
+    """Получить set Jamendo track ID, которые уже показывались пользователю."""
+    if not user_id:
+        return set()
+    
+    # Получаем треки, показанные за последние 30 дней
+    cutoff = datetime.utcnow() - timedelta(days=30)
+    rows = (
+        db.query(JamendoShown.jamendo_track_id)
+        .filter(
+            JamendoShown.user_id == user_id,
+            JamendoShown.shown_at >= cutoff
+        )
+        .all()
+    )
+    return {row[0] for row in rows}
+
+
+def _mark_tracks_as_shown(db: Session, user_id: UUID | None, track_ids: list[str]):
+    """Пометить треки как показанные для пользователя."""
+    if not user_id:
+        return
+    
+    for track_id in track_ids:
+        # Проверяем, не был ли трек уже отмечен
+        existing = db.query(JamendoShown).filter(
+            JamendoShown.user_id == user_id,
+            JamendoShown.jamendo_track_id == track_id
+        ).first()
+        
+        if not existing:
+            shown = JamendoShown(
+                user_id=user_id,
+                jamendo_track_id=track_id,
+                was_played=False
+            )
+            db.add(shown)
+    
+    db.commit()
+
+
+@router.get("/discover", response_model=dict)
+def discover_jamendo_tracks(
+    limit: int = Query(40, ge=1, le=100),
+    rotate: bool = Query(False, description="Принудительная ротация — показать другие треки"),
+    skin_name: str = Query("Стандартный", description="Название активного скина для тематических рекомендаций"),
+    user_id: UUID | None = Depends(get_optional_user_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Discover Jamendo треки с ротацией и тематическими рекомендациями.
+    
+    Возвращает:
+    - new_for_you: треки, которые пользователь ещё не видел
+    - already_shown: треки, которые уже показывались (с маркером)
+    - theme_tags: теги, использованные для поиска
+    - used_fallback: был ли использован fallback (мало треков по основным тегам)
+    
+    Каждый визит/refresh показывает разные треки благодаря:
+    - Варьирующемуся offset (seeded by day/session)
+    - Миксу popularity/newest
+    - Фильтрации по уже показанным трекам
+    - Тематическим тегам, соответствующим активному скину
+    """
+    # Получаем теги для скина
+    primary_tags, fallback_tags = get_tags_for_skin(skin_name)
+    
+    base_params = {
+        "client_id": JAMENDO_CLIENT_ID,
+        "format": "json",
+        "audioformat": "mp31",
+        "imagesize": 300,
+        "type": "albumtrack single",
+        "fuzzytags": primary_tags,  # Тематические теги скина
+    }
+    
+    imported_ids = _get_imported_jamendo_ids(db)
+    shown_ids = _get_shown_jamendo_ids(db, user_id) if user_id else set()
+    
+    # Ротация offset: используем день + random seed для вариации
+    today_seed = int(datetime.utcnow().strftime("%Y%m%d"))
+    if rotate:
+        # При нажатии "Показать другие" — случайный offset
+        random_offset = random.randint(0, 2000)
+    else:
+        # При обычной загрузке — детерминированный offset по дню
+        random.seed(today_seed + (hash(str(user_id)) % 1000 if user_id else 0))
+        random_offset = random.randint(0, 1000)
+    
+    # Микс из популярных и новых треков
+    popular_params = {**base_params, "order": "popularity_month"}
+    newest_params = {**base_params, "order": "releasedate_desc"}
+    
+    # Собираем треки (50% популярные, 50% новые)
+    half_limit = limit // 2
+    
+    popular_tracks = _collect_unimported_tracks(
+        popular_params, {}, imported_ids, half_limit, start_offset=random_offset
+    )
+    
+    newest_tracks = _collect_unimported_tracks(
+        newest_params, {}, imported_ids, half_limit, start_offset=random_offset
+    )
+    
+    # Объединяем и перемешиваем
+    all_tracks = popular_tracks + newest_tracks
+    
+    # Проверяем, достаточно ли треков. Если мало — fallback на более широкие теги
+    used_fallback = False
+    if len(all_tracks) < limit // 2:
+        # Пробуем fallback теги
+        fallback_params = {**base_params, "fuzzytags": fallback_tags}
+        fallback_popular = _collect_unimported_tracks(
+            {**fallback_params, "order": "popularity_month"}, {}, imported_ids, half_limit, start_offset=random_offset
+        )
+        fallback_newest = _collect_unimported_tracks(
+            {**fallback_params, "order": "releasedate_desc"}, {}, imported_ids, half_limit, start_offset=random_offset
+        )
+        all_tracks.extend(fallback_popular + fallback_newest)
+        used_fallback = True
+    
+    random.shuffle(all_tracks)
+    
+    # Разделяем на "новое" и "уже показано"
+    new_for_you = []
+    already_shown = []
+    
+    for track in all_tracks:
+        if track.jamendo_id in shown_ids:
+            already_shown.append(track)
+        else:
+            new_for_you.append(track)
+    
+    # Ограничиваем количество
+    new_for_you = new_for_you[:limit]
+    already_shown = already_shown[:20]  # Не больше 20 "уже показанных"
+    
+    # Помечаем новые треки как показанные
+    if user_id and new_for_you:
+        new_track_ids = [t.jamendo_id for t in new_for_you]
+        _mark_tracks_as_shown(db, user_id, new_track_ids)
+    
+    return {
+        "new_for_you": new_for_you,
+        "already_shown": already_shown,
+        "total_new": len(new_for_you),
+        "total_shown": len(already_shown),
+        "theme_tags": fallback_tags if used_fallback else primary_tags,
+        "used_fallback": used_fallback,
+        "skin_name": skin_name,
     }

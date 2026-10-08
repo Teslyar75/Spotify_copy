@@ -9,6 +9,13 @@ from app.models.user_profile import UserProfile
 from app.models.album import Album
 from app.models.user_status import UserStatus
 from app.models.message import Message
+from app.models.skin import Skin
+from app.models.skin_entitlement import SkinEntitlement
+from app.models.track_support import TrackSupport
+from app.models.track_skin import TrackSkin
+from app.models.promotion import Promotion
+from app.models.stake import Stake
+from app.models.jamendo_shown import JamendoShown
 
 __all__ = [
     "AuthUser",
@@ -20,4 +27,11 @@ __all__ = [
     "ListeningHistory",
     "UserStatus",
     "Message",
+    "Skin",
+    "SkinEntitlement",
+    "TrackSupport",
+    "TrackSkin",
+    "Promotion",
+    "Stake",
+    "JamendoShown",
 ]
