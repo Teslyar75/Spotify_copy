@@ -16,14 +16,49 @@
 - **Космос** — фиолетовые звёздные оттенки (#8B5CF6). Музыка: ambient, electronic, space, soundtrack.
 - **Закат** — тёплые оранжево-розовые тона (#FF6B6B, #FFB347). Музыка: chillout, lounge, downtempo, acoustic.
 - **Ретро Волны** — синтвейв стиль (#FF6EC7, #7B2CBF). Музыка: synthwave, electronic, retro, 80s.
-- **Минимализм** — монохромный дизайн (#FFFFFF). Музыка: ambient, minimal, piano, classical.
+- **Минимализм** — монохромный дизайн off-white (#F5F5F5). Музыка: ambient, minimal, piano, classical.
 - **Броня гения** — красно-золотой tech HUD (#C41E3A, #FFD700). Музыка: rock, electronic, metal, industrial.
-- **Ночной паутинщик** — красно-синий городской пейзаж (#DC143C, #1E90FF). Музыка: rock, electronic, alternative, indie.
-- **Бейкер-стрит** — викторианский детектив (#8B4513, #2F4F4F). Музыка: classical, jazz, acoustic, instrumental.
+- **Ночной паутинщик** — десатурированный красно-синий городской пейзаж (#8B0000, #4682B4). Музыка: rock, electronic, alternative, indie.
+- **Бейкер-стрит** — викторианский детектив с янтарным акцентом (#FFBF00, #8B4513). Музыка: classical, jazz, acoustic, instrumental.
 - **Викинги** — северные фьорды и драккары (#4682B4, #708090). Музыка: folk, epic, ambient, soundtrack.
 - **Железный трон** — средневековый замок (#2C2C2C, #8B0000). Музыка: orchestral, cinematic, epic, soundtrack.
+- **Звёздный флот** — исследование далёких галактик (#4169E1, #1E90FF). Музыка: electronic, space, ambient, soundtrack.
+- **Менталист** — тёплый минимализм с чайным настроением (#D4A76A, #8B7355). Музыка: jazz, acoustic, instrumental, ambient.
+- **Косплей** — яркие цвета аниме-конвенций (#FF1493, #00CED1). Музыка: anime, jpop, electronic, dance.
 
 *(Все темы используют оригинальное или сгенерированное оформление без официальных логотипов, кадров из фильмов, товарных знаков или изображений актёров)*
+
+**Скриншоты:**
+
+<details>
+<summary>Страница скинов (Mobile & Desktop)</summary>
+
+![Страница скинов - Mobile](docs/screenshots/mobile-skins-page.png)
+![Страница скинов - Desktop](docs/screenshots/desktop-skins-page.png)
+</details>
+
+<details>
+<summary>Стандартный скин (Home & Player)</summary>
+
+![Default - Home Mobile](docs/screenshots/mobile-default-home.png)
+![Default - Home Desktop](docs/screenshots/desktop-default-home.png)
+![Default - Player Mobile](docs/screenshots/mobile-default-player.png)
+</details>
+
+<details>
+<summary>Викинги и Железный трон</summary>
+
+![Vikings - Home Mobile](docs/screenshots/mobile-vikings-home.png)
+![Thrones - Home Mobile](docs/screenshots/mobile-thrones-home.png)
+</details>
+
+<details>
+<summary>Загрузка фото и Jamendo рекомендации</summary>
+
+![Photo Upload Mobile](docs/screenshots/mobile-photo-upload.png)
+![Jamendo - Default Mobile](docs/screenshots/mobile-jamendo-default.png)
+![Jamendo - Vikings Mobile](docs/screenshots/mobile-jamendo-vikings.png)
+</details>
 
 **Загрузка своего фото:**
 Пользователь загружает изображение → сервер автоматически:
