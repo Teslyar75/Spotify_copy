@@ -84,3 +84,6 @@ class UserProfile(Base):
     
     # Ставки на контент
     stakes = relationship("Stake", back_populates="user", cascade="all, delete-orphan")
+    
+    # Показанные треки Jamendo (для ротации)
+    jamendo_shown_tracks = relationship("JamendoShown", back_populates="user", cascade="all, delete-orphan")

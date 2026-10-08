@@ -15,6 +15,7 @@ from app.models.track_support import TrackSupport
 from app.models.track_skin import TrackSkin
 from app.models.promotion import Promotion
 from app.models.stake import Stake
+from app.models.jamendo_shown import JamendoShown
 
 __all__ = [
     "AuthUser",
@@ -32,4 +33,5 @@ __all__ = [
     "TrackSkin",
     "Promotion",
     "Stake",
+    "JamendoShown",
 ]
