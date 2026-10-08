@@ -33,7 +33,7 @@ const SectionGrid = ({ title, songs, isLoading }: SectionGridProps) => {
 					{title}
 				</h2>
 
-				<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+				<div className="grid grid-cols-2 gap-3 xs:grid-cols-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
 					{Array.from({ length: 6 }).map((_, i) => (
 						<div key={i} className="space-y-2 sm:space-y-3">
 							<Skeleton className="aspect-square rounded-lg bg-white/10" />
@@ -54,7 +54,7 @@ const SectionGrid = ({ title, songs, isLoading }: SectionGridProps) => {
 				{title}
 			</h2>
 
-			<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+			<div className="grid grid-cols-2 gap-3 xs:grid-cols-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
 				{songs.map((song) => {
 					const albumId = song.album_id;
 
@@ -62,7 +62,7 @@ const SectionGrid = ({ title, songs, isLoading }: SectionGridProps) => {
 						<Link
 							key={song.id}
 							to={albumId ? `/albums/${albumId}` : "#"}
-							className="group relative rounded-lg bg-white/5 p-3 transition-all duration-200 hover:bg-white/10 sm:p-4 cursor-pointer"
+							className="group relative rounded-lg bg-white/5 p-3 transition-all duration-200 hover:bg-white/10 sm:p-4 cursor-pointer w-full max-w-full overflow-hidden"
 						>
 							<div className="relative mb-3 sm:mb-4">
 								<TrackCoverImg
